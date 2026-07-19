@@ -1,6 +1,6 @@
 "use client";
 
-import { GetSessionStorage } from "@/src/helpers/helpers";
+import { GetSessionStorage } from "@/helpers/helpers";
 import { useEffect } from "react";
 
 export default function WelcomePage() {

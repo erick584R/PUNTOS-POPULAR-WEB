@@ -3,12 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { AccountCircleOutlined, LockOutline } from "@mui/icons-material";
 import { Alert, Checkbox, FormControlLabel } from "@mui/material";
-
-import { UserLoginProps } from "@/src/interfaces/App/User.interfaces";
-import useFormHelper from "@/src/helpers/useFormHelper";
-
-import { DefaultValidator } from "@/src/helpers/validators";
-import SesionServices from "@/src/services/sesion.services";
+import { UserLoginProps } from "@/interfaces/App/User.interfaces";
+import useFormHelper from "@/helpers/useFormHelper";
+import { DefaultValidator } from "@/helpers/validators";
+import SesionServices from "@/services/sesion.services";
 import PopularBackdrop from "../feedback/Backdrop";
 import {
   GetLocalStorage,
@@ -16,7 +14,7 @@ import {
   SaveLocalStorage,
   SaveSessionStorage,
   SetIp,
-} from "@/src/helpers/helpers";
+} from "@/helpers/helpers";
 import PopularInput from "../forms/PopularInput";
 
 const LoginPage: React.FC = () => {

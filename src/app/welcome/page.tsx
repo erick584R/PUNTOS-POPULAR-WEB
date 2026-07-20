@@ -1,21 +1,19 @@
 "use client";
 
-import { GetSessionStorage } from "@/helpers/helpers";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function WelcomePage() {
+  const [userName, setUserName] = useState("");
+
   useEffect(() => {
-    const token = GetSessionStorage("user_token");
-    if (!token) {
-      window.location.href = "/";
-    }
+    const storedName = sessionStorage.getItem("user_name_data") || "";
+    setUserName(storedName);
   }, []);
 
   return (
     <main style={{ padding: 40 }}>
-      <h1>Bienvenido a Puntos Popular</h1>
-      <p>Hola, {GetSessionStorage("user_name_data") || GetSessionStorage("user_name")}</p>
-      <p>Has iniciado sesión correctamente.</p>
+      <h1>Bienvenido</h1>
+      <p>{userName !== "" ? userName : "Cargando usuario..."}</p>
     </main>
   );
 }

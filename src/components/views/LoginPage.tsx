@@ -159,9 +159,7 @@ const LoginPage: React.FC = () => {
                 label="Recordar"
               />
 
-              <button type="button" className="popular-link-btn">
-                Registrarse
-              </button>
+              
             </div>
 
             <button

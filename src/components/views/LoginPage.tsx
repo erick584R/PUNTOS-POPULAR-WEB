@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AccountCircleOutlined, LockOutline } from "@mui/icons-material";
+import { AccountCircleOutlined, LockOutlined } from "@mui/icons-material";
 import { Alert, Checkbox, FormControlLabel } from "@mui/material";
 import { UserLoginProps } from "@/interfaces/App/User.interfaces";
 import useFormHelper from "@/helpers/useFormHelper";
@@ -123,7 +123,7 @@ const LoginPage: React.FC = () => {
           name="password"
           value={values.password}
           placeholder="Ingrese su contraseña"
-          startAdornment={<LockOutline />}
+          startAdornment={<LockOutlined />}
           isPassword={true}
           regex={DefaultValidator}
           onChange={handleChange}

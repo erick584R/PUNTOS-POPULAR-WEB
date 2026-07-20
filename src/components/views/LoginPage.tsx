@@ -91,7 +91,9 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      setErrorResponse(`${response.bpOutReq.codigoError} - ${response.bpOutReq.mensajeError}`);
+      setErrorResponse(
+        `${response.bpOutReq.codigoError} - ${response.bpOutReq.mensajeError}`
+      );
     } catch {
       setErrorResponse("Error al iniciar sesión.");
     } finally {

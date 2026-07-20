@@ -33,7 +33,7 @@ export default class SesionServices {
         Identificador: GetLocalStorage("device_id"),
         TieneBiometria: false,
         Navegador: navigator.userAgent,
-        VersionAplicacion: "PUNTOS POPULAR 1.0",
+        VersionAplicacion: "PUNTOS POPULAR 2.0",
       },
     };
 

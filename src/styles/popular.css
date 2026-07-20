@@ -12,9 +12,11 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(rgba(255,255,255,0.08), rgba(255,255,255,0.08)),
-    url("/banner.png") center center / cover no-repeat;
-  filter: blur(0px);
+    radial-gradient(circle at top left, rgba(255, 196, 0, 0.45), transparent 35%),
+    radial-gradient(circle at top right, rgba(255, 153, 0, 0.55), transparent 32%),
+    radial-gradient(circle at bottom left, rgba(187, 38, 110, 0.40), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(83, 203, 210, 0.35), transparent 28%),
+    linear-gradient(135deg, #f4efe9 0%, #efcc63 35%, #f7aa1d 62%, #d7d8c9 82%, #9dd8d8 100%);
   z-index: 0;
 }
 
@@ -22,9 +24,11 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(42,90,168,.35), rgba(255,170,0,.35));
+  background: rgba(255,255,255,0.10);
   z-index: 0;
 }
+
+
 
 .popular-login-card {
   position: relative;

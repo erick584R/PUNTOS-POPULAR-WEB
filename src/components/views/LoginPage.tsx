@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { AccountCircleOutlined, LockOutlined } from "@mui/icons-material";
-import { Alert, Checkbox, FormControlLabel } from "@mui/material";
+import { Checkbox, FormControlLabel } from "@mui/material";
+
 import { UserLoginProps } from "@/interfaces/App/User.interfaces";
 import useFormHelper from "@/helpers/useFormHelper";
 import { DefaultValidator } from "@/helpers/validators";
@@ -55,7 +57,7 @@ const LoginPage: React.FC = () => {
     }
   }, [initialLoad, handleChange]);
 
-  function handleRemembeme() {
+  function handleRememberMe() {
     if (remember) {
       SaveLocalStorage("user_name", values.user.toUpperCase());
     } else {
@@ -76,7 +78,7 @@ const LoginPage: React.FC = () => {
       const response = await SesionService.IniciarSesionPEL(values);
 
       if (response.bpOutReq.codigoError === "0") {
-        handleRemembeme();
+        handleRememberMe();
 
         SaveSessionStorage("user_name", values.user.toUpperCase());
         SaveSessionStorage("user_token", response.token);
@@ -98,67 +100,91 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <section style={{ maxWidth: 420, margin: "40px auto", padding: 20 }}>
+    <main className="popular-login-page">
       {loading && <PopularBackdrop open={true} />}
 
-      <form onSubmit={handleLogin}>
-        <h2>Login - Puntos Popular</h2>
+      <div className="popular-login-bg" />
 
-        <PopularInput
-          className="mt-2 mb-2"
-          label="Usuario"
-          name="user"
-          value={values.user}
-          placeholder="Ingrese su usuario"
-          type="text"
-          disabled={remember}
-          startAdornment={<AccountCircleOutlined />}
-          regex={DefaultValidator}
-          onChange={handleChange}
-        />
-
-        <PopularInput
-          className="mb-1"
-          label="Contraseña"
-          name="password"
-          value={values.password}
-          placeholder="Ingrese su contraseña"
-          startAdornment={<LockOutlined />}
-          isPassword={true}
-          regex={DefaultValidator}
-          onChange={handleChange}
-        />
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                size="small"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-              />
-            }
-            label="Recordar usuario"
-          />
+      <section className="popular-login-card">
+        <div className="popular-login-left">
+          <div className="popular-login-logo-wrap">
+            <Image
+              src="/imgs/puntos-popular-logo.png"
+              alt="Puntos Popular"
+              width={280}
+              height={280}
+              className="popular-login-logo"
+              priority
+            />
+          </div>
         </div>
 
-        <button type="submit" disabled={handleValidation()} style={{ width: "100%", marginTop: 12 }}>
-          Ingresar
-        </button>
+        <div className="popular-login-right">
+          <form className="popular-login-form" onSubmit={handleLogin}>
+            <PopularInput
+              className="popular-field"
+              label="Usuario Corresponsal"
+              name="user"
+              value={values.user}
+              placeholder="Ingrese su usuario"
+              type="text"
+              startAdornment={<AccountCircleOutlined />}
+              regex={DefaultValidator}
+              onChange={handleChange}
+            />
 
-        {handleValidation() && (
-          <Alert variant="outlined" severity="info" sx={{ mt: 2 }}>
-            Debes ingresar usuario y contraseña.
-          </Alert>
-        )}
+            <PopularInput
+              className="popular-field"
+              label="Contraseña"
+              name="password"
+              value={values.password}
+              placeholder="Ingrese su contraseña"
+              startAdornment={<LockOutlined />}
+              isPassword={true}
+              regex={DefaultValidator}
+              onChange={handleChange}
+            />
 
-        {errorResponse && (
-          <Alert variant="outlined" severity="error" sx={{ mt: 2 }}>
-            {errorResponse}
-          </Alert>
-        )}
-      </form>
-    </section>
+            <div className="popular-login-row">
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                  />
+                }
+                label="Recordar"
+              />
+
+              <button type="button" className="popular-link-btn">
+                Registrarse
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={handleValidation()}
+              className="popular-submit-btn"
+            >
+              Ingresar
+            </button>
+
+            <button type="button" className="popular-forgot-btn">
+              ¿Olvidaste tu contraseña?
+            </button>
+
+            {errorResponse && (
+              <div className="popular-error-message">{errorResponse}</div>
+            )}
+          </form>
+        </div>
+      </section>
+
+      <footer className="popular-login-footer">
+        ©2026 Banco Popular Honduras. Todos los derechos reservados.
+      </footer>
+    </main>
   );
 };
 

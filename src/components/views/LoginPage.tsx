@@ -217,7 +217,8 @@ const LoginPage: React.FC = () => {
         SaveSessionStorage("user_main_disp", response.dispositivoPrincipal);
 
         // Redirigimos a la pantalla welcome
-        window.location.href = "/welcome";
+        //window.location.href = "/welcome";
+        window.location.href = "/dashboard";
 
         // Terminamos aquí la función
         return;

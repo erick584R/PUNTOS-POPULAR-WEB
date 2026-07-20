@@ -1,0 +1,140 @@
+.popular-dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f4f6f9;
+  font-family: Arial, sans-serif;
+}
+
+/* Menú Lateral Izquierdo */
+.popular-sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, #1f4d8f 0%, #113f8a 100%);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.popular-sidebar-header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.popular-sidebar-menu {
+  flex: 1;
+  padding: 20px 0;
+}
+
+.popular-sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-left: 4px solid transparent;
+  cursor: pointer;
+}
+
+.popular-sidebar-item:hover,
+.popular-sidebar-item.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border-left-color: #f88606;
+}
+
+.popular-sidebar-icon {
+  margin-right: 16px;
+  font-size: 1.4rem !important;
+  color: #f28b00;
+}
+
+.popular-sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Contenedor Principal */
+.popular-main-content {
+  flex: 1;
+  margin-left: 280px;
+  padding: 40px;
+  min-width: 0;
+}
+
+.popular-dashboard-header {
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popular-dashboard-title {
+  font-size: 28px;
+  color: #1f4d8f;
+  margin: 0;
+  font-weight: 700;
+}
+
+.popular-user-badge {
+  font-size: 16px;
+  color: #5f6470;
+  font-weight: 600;
+  background: #ffffff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Tarjetas de Resumen */
+.popular-stat-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-top: 4px solid #1f4d8f;
+}
+
+.popular-stat-card.total {
+  border-top-color: #f88606;
+}
+
+/* Filtros */
+.popular-filter-chip {
+  transition: all 0.2s ease !important;
+}
+
+.popular-filter-chip:hover {
+  transform: translateY(-1px);
+}
+
+/* Tabla Custom */
+.popular-table-container {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.popular-table-header {
+  background: #1f4d8f;
+  color: #ffffff;
+}
+
+.popular-table-header th {
+  color: #ffffff !important;
+  font-weight: bold !important;
+}

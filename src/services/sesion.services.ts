@@ -6,7 +6,7 @@ import { InicioSesionResponse } from "@/interfaces/Api/sesion.api";
 import { UserLoginProps } from "@/interfaces/App/User.interfaces";
 import Axios from "axios";
 
-Axios.defaults.baseURL = process.env.NEXT_PUBLIC_API_GATEWAY || "";
+Axios.defaults.baseURL = process.env.NEXT_PUBLIC_API_GATEWAY_CORRESPONSAL || "";
 Axios.defaults.headers.post["Content-Type"] = "application/json";
 Axios.defaults.headers.post["Accept"] = "application/json";
 
@@ -16,7 +16,7 @@ export default class SesionServices {
 
     const requestBody = {
       BpinReq: {
-        canal: process.env.NEXT_PUBLIC_CANAL || "1",
+        canal: process.env.NEXT_PUBLIC_CANAL_CORRESPONSAL || "3",
         dispositivoFisico: "",
         ipDispositivo: GetSessionStorage("device_ip"),
         ctnro: "",

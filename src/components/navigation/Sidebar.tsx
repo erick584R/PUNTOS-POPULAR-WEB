@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,7 +19,15 @@ interface SidebarProps {
 
 export default function Sidebar({ onToggle }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [nombreUsuario, setNombreUsuario] = useState("");
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+    const nombre = sessionStorage.getItem("user_name_data") || "";
+    setNombreUsuario(nombre);
+  }, []);
 
   const handleToggle = () => {
     const newState = !isCollapsed;
@@ -35,40 +43,34 @@ export default function Sidebar({ onToggle }: SidebarProps) {
     { name: "Servicios Públicos", href: "/servicios", icon: <ReceiptOutlined className="popular-sidebar-icon" /> },
   ];
 
-  const nombreUsuario = typeof window !== "undefined" ? sessionStorage.getItem("user_name_data") || "ERICK RAMIREZ" : "ERICK RAMIREZ";
-
   return (
     <aside className={`popular-sidebar ${isCollapsed ? "collapsed" : ""}`}>
-      {/* Botón flotante para colapsar/expandir */}
       <button className="popular-sidebar-toggle" onClick={handleToggle} title="Minimizar / Expandir Menú">
         {isCollapsed ? <MenuOutlined /> : <MenuOpenOutlined />}
       </button>
 
-      {/* Encabezado con el Logo Real */}
       <div className="popular-sidebar-header">
         <div className="popular-sidebar-brand-wrapper">
-          <img 
-            src="/imgs/puntos-popular-logo.png" 
-            alt="Puntos Popular" 
-            className="popular-brand-logo-img" 
+          <img
+            src="/imgs/puntos-popular-logo.png"
+            alt="Puntos Popular"
+            className="popular-brand-logo-img"
           />
         </div>
       </div>
 
-      {/* Perfil del Agente */}
       <div className="popular-sidebar-profile">
         <div className="profile-avatar">
           <AccountCircleOutlined style={{ color: "#1f4d8f" }} />
         </div>
         {!isCollapsed && (
           <div className="profile-info">
-            <span className="profile-name">{nombreUsuario}</span>
+            <span className="profile-name">{mounted ? nombreUsuario : ""}</span>
             <span className="profile-role">Agente Corresponsal</span>
           </div>
         )}
       </div>
 
-      {/* Navegación del Menú */}
       <nav className="popular-sidebar-menu">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
@@ -85,7 +87,6 @@ export default function Sidebar({ onToggle }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer del Sidebar con opción de Cerrar Sesión */}
       <div className="popular-sidebar-footer">
         <Link href="/" className="popular-sidebar-item logout-item">
           <LogoutOutlined className="popular-sidebar-icon" />

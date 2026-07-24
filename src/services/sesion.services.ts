@@ -38,7 +38,7 @@ export default class SesionServices {
     };
 
     return new Promise<InicioSesionResponse>((resolve) => {
-      Axios.post("/api/Seguridad/v1/BancoPopular/iniciar-sesion-pel", requestBody)
+      Axios.post("/api/Seguridad/v1/BancoPopular/iniciar-sesion-corresponsal", requestBody)
         .then((result) => resolve(result.data))
         .catch(() =>
           resolve({

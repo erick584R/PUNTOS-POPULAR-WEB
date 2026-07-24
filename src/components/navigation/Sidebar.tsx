@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { GetSessionStorage } from "@/helpers/helpers";
 import {
   BarChartOutlined,
   SwapHorizOutlined,
@@ -25,7 +26,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
 
   useEffect(() => {
     setMounted(true);
-    const nombre = sessionStorage.getItem("user_name_data") || "";
+    const nombre = GetSessionStorage("user_name_data") || "";
     setNombreUsuario(nombre);
   }, []);
 

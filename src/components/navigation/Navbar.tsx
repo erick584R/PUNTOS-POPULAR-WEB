@@ -1,30 +1,30 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AccountCircleOutlined } from "@mui/icons-material";
+import { GetSessionStorage } from "@/helpers/helpers";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
-export default function Navbar() {
-  const [agente, setAgente] = useState({ nombre: "Cargando...", cuenta: "..." });
+export default function PopularNavbar() {
+  const [userName, setUserName] = useState("");
+  const [userAccount, setUserAccount] = useState("");
 
   useEffect(() => {
-    // Obtenemos los campos guardados durante el inicio de sesión exitoso
-    const nombreGuardado = sessionStorage.getItem("user_name_data") || "AGENTE POPULAR";
-    const cuentaGuardada = sessionStorage.getItem("user_id") || "000000";
-    
-    setAgente({
-      nombre: nombreGuardado,
-      cuenta: cuentaGuardada,
-    });
+    const name = GetSessionStorage("user_name_data") || "USUARIO";
+    const account = GetSessionStorage("user_account") || ""; // Lee cuentaBP guardada
+
+    setUserName(name);
+    setUserAccount(account);
   }, []);
 
   return (
     <header className="popular-top-navbar">
       <div className="popular-navbar-spacer" />
+      
       <div className="popular-navbar-user-box">
-        <AccountCircleOutlined className="popular-navbar-user-icon" />
+        <AccountCircleIcon className="popular-navbar-user-icon" />
         <div className="popular-navbar-user-info">
-          <span className="navbar-username">{agente.nombre}</span>
-          <span className="navbar-user-account">Cuenta: {agente.cuenta}</span>
+          <span className="navbar-username">{userName}</span>
+          <span className="navbar-user-account">Cuenta: {userAccount}</span>
         </div>
       </div>
     </header>

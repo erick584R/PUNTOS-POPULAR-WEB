@@ -3,12 +3,14 @@ import { bpInReq } from "@/interfaces/Api/general.api";
 type LocalStorageCodes = "device_id" | "user_name";
 type SessionStorageCodes =
   | "user_id"
+  | "user_account"
   | "user_token"
   | "sesion_info"
   | "device_ip"
   | "user_name"
   | "user_name_data"
-  | "user_main_disp";
+  | "user_main_disp"
+  | "user_profile";
 
 export function SaveLocalStorage(key: LocalStorageCodes, value: string): void {
   if (typeof window !== "undefined") {
@@ -66,7 +68,7 @@ export function DefaultBPinReq(): Promise<bpInReq> {
     const disp = `${navigator.appName}|N/A|${navigator.appVersion}|${navigator.platform}|WEB|NAVEGADOR|${GetLocalStorage("device_id")}`;
 
     const response = {
-      canal: parseInt(process.env.NEXT_PUBLIC_CANAL || "1"),
+      canal: parseInt(process.env.NEXT_PUBLIC_CANAL || "3"),
       dispositivoFisico: disp,
       ipDispositivo: "",
       ctnro: GetSessionStorage("user_id"),

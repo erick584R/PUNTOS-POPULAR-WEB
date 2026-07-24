@@ -1,17 +1,9 @@
-import { bpOutReq } from "./general.api";
-
-export interface InicioSesionResponse {
-  token: string;
-  requiereAutorizacion: boolean;
-  requiereCambioContraseña: boolean;
-  tieneSesionActiva: boolean;
-  dispositivoPrincipal: string;
+export interface UserProfile {
   nombreCliente: string;
   ctnro: string;
   info: string;
   idCorresponsal: string;
   idUsuario: string;
-  pass: string | null;
   identidad: string;
   primerNombre: string;
   segundoNombre: string | null;
@@ -19,5 +11,4 @@ export interface InicioSesionResponse {
   segundoApellido: string | null;
   cuentaBP: string;
   correo: string;
-  bpOutReq: bpOutReq;
 }

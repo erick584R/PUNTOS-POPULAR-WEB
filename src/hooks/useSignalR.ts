@@ -13,11 +13,11 @@ export function useSignalR(userId: string) {
             .withUrl(
                 `${process.env.NEXT_PUBLIC_API_GATEWAY_CORRESPONSAL}/api/Notificaciones/v1/BancoPopular/inicio-sesion-corresponsal`,
                 {
-                    accessTokenFactory: () => userId, // Pasar usuario como token
+                    accessTokenFactory: () => userId,
                     transport: signalR.HttpTransportType.WebSockets,
                 }
             )
-            .withAutomaticReconnect([0, 0, 0, 3000, 5000, 10000]) // Reconectar automáticamente
+            .withAutomaticReconnect([0, 0, 0, 3000, 5000, 10000])
             .build();
 
         connection.onclose((error) => {
@@ -28,14 +28,12 @@ export function useSignalR(userId: string) {
             }
         });
 
-        // Evento: Recibir notificación de sesión en otro dispositivo
         connection.on("RecibirNotificacion", (message: string) => {
             console.log("🔔 Notificación recibida:", message);
             setFinalizarSesion(true);
             SetMensajeRecibido(message);
         });
 
-        // Iniciar conexión
         connection.start()
             .then(() => console.log("✅ Conectado a SignalR"))
             .catch(err => console.error("❌ Error conectando a SignalR:", err));

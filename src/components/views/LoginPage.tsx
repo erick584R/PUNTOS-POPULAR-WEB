@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { AccountCircleOutlined, LockOutlined } from "@mui/icons-material";
 import { Checkbox, FormControlLabel } from "@mui/material";
@@ -27,6 +27,7 @@ const LoginPage: React.FC = () => {
     const [remember, setRemember] = useState(false);
     const [currentUserId, setCurrentUserId] = useState("");
     const [pendingLoginData, setPendingLoginData] = useState<any>(null);
+    const notifyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const { showError } = useAlert();
     const SesionService = new SesionServices();
@@ -39,7 +40,7 @@ const LoginPage: React.FC = () => {
     const { values, handleChange } = useFormHelper<UserLoginProps>(initialValues);
 
     // ✅ USAR HOOK DE SIGNALR
-    const { connectionRef, FinalizarSesion, MensajeRecibido } = useSignalR(currentUserId);
+    const { connectionRef, FinalizarSesion, MensajeRecibido, isConnected } = useSignalR(currentUserId);
 
     useEffect(() => {
         if (initialLoad) {
@@ -63,14 +64,13 @@ const LoginPage: React.FC = () => {
         }
     }, [initialLoad, handleChange]);
 
-    // ✅ CUANDO RECIBE NOTIFICACIÓN DE SESIÓN EN OTRO DISPOSITIVO
+    // ✅ CUANDO RECIBE NOTIFICACIÓN DE OTRO DISPOSITIVO
     useEffect(() => {
-        if (FinalizarSesion && pendingLoginData) {
-            // Si el usuario acepta cerrar la sesión anterior
-            // entonces debe cerrar sesión automáticamente
+        if (FinalizarSesion && MensajeRecibido) {
+            console.log("📢 Sesión cerrada desde otro dispositivo");
             handleCloseSesion();
         }
-    }, [FinalizarSesion]);
+    }, [FinalizarSesion, MensajeRecibido]);
 
     function handleRememberMe() {
         if (remember) {
@@ -108,21 +108,61 @@ const LoginPage: React.FC = () => {
             ctnro: response.ctnro
         }));
 
+        if (notifyTimeoutRef.current) {
+            clearTimeout(notifyTimeoutRef.current);
+        }
+
         window.location.href = "/dashboard";
     }
 
     function handleCloseSesion() {
-        // El usuario fue notificado de que su sesión se cerró desde otro dispositivo
+        console.log("🚪 Cerrando sesión del dispositivo actual");
         RemoveLocalStorage("user_name");
         RemoveLocalStorage("device_id");
         SaveSessionStorage("user_name", "");
         SaveSessionStorage("user_token", "");
         SaveSessionStorage("user_id", "");
+        setCurrentUserId("");
 
         showError(
             "Sesión Cerrada",
             "Tu sesión ha sido cerrada debido a un inicio de sesión desde otro dispositivo."
         );
+    }
+
+    async function notificarYProceder(usuario: string, response: any) {
+        console.log(`📢 Notificando a otros dispositivos del usuario: ${usuario}`);
+        
+        let intentos = 0;
+        const maxIntentos = 15;
+
+        const interval = setInterval(async () => {
+            intentos++;
+            console.log(`⏳ Esperando SignalR... Intento ${intentos}/${maxIntentos} (Estado: ${connectionRef.current?.state})`);
+            
+            if (connectionRef.current?.state === "Connected") {
+                console.log("✅ SignalR conectado, enviando notificación...");
+                clearInterval(interval);
+
+                try {
+                    await connectionRef.current.invoke("NotificarDispositivos", usuario);
+                    console.log("✅ Notificación enviada exitosamente");
+                } catch (err) {
+                    console.error("❌ Error enviando notificación:", err);
+                }
+
+                notifyTimeoutRef.current = setTimeout(() => {
+                    procesoLoginExitoso(response);
+                }, 500);
+            } else if (intentos >= maxIntentos) {
+                console.warn("⚠️ SignalR no conectó, procediendo sin notificación");
+                clearInterval(interval);
+                
+                notifyTimeoutRef.current = setTimeout(() => {
+                    procesoLoginExitoso(response);
+                }, 300);
+            }
+        }, 200);
     }
 
     async function handleLogin(e: React.FormEvent) {
@@ -133,40 +173,30 @@ const LoginPage: React.FC = () => {
             const response = await SesionService.IniciarSesionPEL(values);
 
             if (response.bpOutReq.codigoError === "0") {
-                // ✅ CÓDIGO 0: Login exitoso
+                console.log("✅ Login exitoso - Código 0");
+                console.log("Response:", response);
 
-                // Guardar usuario para SignalR
-                setCurrentUserId(values.user.toUpperCase());
-
-                // IMPORTANTE: Verificar si el backend cerró otras sesiones
-                // Si response.tieneSesionActiva es true, significa que había sesión activa
-                // y el backend ya la cerró (validar-sesion-corresponsal lo hizo)
+                const usuarioUpper = values.user.toUpperCase();
+                console.log(`🔌 Estableciendo usuario para SignalR: ${usuarioUpper}`);
                 
-                if (response.tieneSesionActiva) {
-                    // Había sesión activa, pero ya fue cerrada por el backend
-                    // Notificar a otros dispositivos que se cierren
-                    setPendingLoginData(response);
-                    
-                    // Invocar método SignalR para notificar otros dispositivos
-                    connectionRef.current?.invoke("NotificarDispositivos", values.user.toUpperCase())
-                        .catch(err => console.error("Error notificando dispositivos:", err));
+                setCurrentUserId(usuarioUpper);
+                setPendingLoginData(response);
 
-                    // Esperar a que otros dispositivos reciban notificación
-                    setTimeout(() => {
-                        procesoLoginExitoso(response);
-                    }, 1500);
+                if (response.tieneSesionActiva) {
+                    console.log("⚠️ Había sesión activa en otro dispositivo, se cerró automáticamente");
+                    await notificarYProceder(usuarioUpper, response);
                 } else {
-                    // No hay sesión activa, proceder directamente
+                    console.log("✅ No hay sesión activa previa");
                     procesoLoginExitoso(response);
                 }
                 return;
             }
 
             if (response.bpOutReq.codigoError === "27") {
-                // ✅ CÓDIGO 27: Hay sesión activa en otro dispositivo
-                // El usuario debe aceptar para cerrar la sesión anterior
+                console.log("⚠️ Código 27 - Sesión activa en otro dispositivo");
 
-                setCurrentUserId(values.user.toUpperCase());
+                const usuarioUpper = values.user.toUpperCase();
+                setCurrentUserId(usuarioUpper);
                 setPendingLoginData(response);
 
                 showError(
@@ -175,24 +205,21 @@ const LoginPage: React.FC = () => {
                     {
                         showAcceptButton: true,
                         onAccept: async () => {
-                            // Usuario acepta: llamar a validar-sesion-corresponsal
-                            // que desactivará la sesión anterior
+                            console.log("✅ Usuario aceptó cerrar sesión anterior");
                             setLoading(true);
 
                             try {
-                                const validateResponse = await SesionService.ValidarSesionCorresponsal(values);
+                                // ✅ IMPORTANTE: Pasar ctnro a ValidarSesionCorresponsal
+                                const validateResponse = await SesionService.ValidarSesionCorresponsal(
+                                    values,
+                                    response.ctnro  // ← ENVIAR CTNRO
+                                );
 
                                 if (validateResponse.bpOutReq.codigoError === "0") {
-                                    // ✅ Sesión anterior cerrada exitosamente
-                                    // Notificar a otros dispositivos
-                                    connectionRef.current?.invoke("NotificarDispositivos", values.user.toUpperCase())
-                                        .catch(err => console.error("Error notificando:", err));
-
-                                    // Esperar a que se notifique y proceder
-                                    setTimeout(() => {
-                                        procesoLoginExitoso(response);
-                                    }, 1500);
+                                    console.log("✅ Sesión anterior cerrada exitosamente");
+                                    await notificarYProceder(usuarioUpper, response);
                                 } else {
+                                    console.error("❌ Error cerrando sesión:", validateResponse.bpOutReq.mensajeError);
                                     showError(
                                         "Error",
                                         "No se pudo cerrar la sesión anterior. Intente nuevamente."
@@ -200,6 +227,7 @@ const LoginPage: React.FC = () => {
                                     setLoading(false);
                                 }
                             } catch (error) {
+                                console.error("❌ Excepción:", error);
                                 showError("Error", "Ocurrió un error procesando su solicitud.");
                                 setLoading(false);
                             }
@@ -209,12 +237,13 @@ const LoginPage: React.FC = () => {
                 return;
             }
 
-            // Otros errores
+            console.error("❌ Error de login:", response.bpOutReq.codigoError);
             showError(
                 `Error ${response.bpOutReq.codigoError}`,
                 response.bpOutReq.mensajeError
             );
         } catch (error) {
+            console.error("❌ Excepción:", error);
             showError(
                 "Error de Conexión",
                 "No se pudo establecer conexión con el servidor. Intente más tarde."

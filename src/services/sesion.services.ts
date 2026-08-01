@@ -71,32 +71,37 @@ export default class SesionServices {
         });
     }
 
-    // ✅ NUEVO MÉTODO: Llamar a validar-sesion-corresponsal
-    // Este endpoint desactiva la sesión anterior en otros dispositivos
-    public async ValidarSesionCorresponsal(user: UserLoginProps): Promise<GenericResponse> {
+    // ✅ ACTUALIZADO: Ahora recibe ctnro como parámetro
+    public async ValidarSesionCorresponsal(user: UserLoginProps, ctnro: string): Promise<GenericResponse> {
         const requestBody = {
             bpInReq: {
                 canal: parseInt(process.env.NEXT_PUBLIC_CANAL_CORRESPONSAL || "3"),
                 dispositivoFisico: `${navigator.appName}|N/A|${navigator.appVersion}|${navigator.platform}|WEB|NAVEGADOR|${GetLocalStorage("device_id")}`,
                 ipDispositivo: GetSessionStorage("device_ip"),
-                ctnro: "",
+                ctnro: ctnro,  // ✅ IMPORTANTE: Enviar ctnro
                 usuario: user.user,
                 token: user.password,
             },
         };
 
+        console.log("📤 Enviando ValidarSesionCorresponsal con:", requestBody);
+
         return new Promise<GenericResponse>((resolve) => {
             Axios.post("/api/Seguridad/v1/BancoPopular/validar-sesion-corresponsal", requestBody)
-                .then((result) => resolve(result.data))
-                .catch(() =>
+                .then((result) => {
+                    console.log("✅ Respuesta ValidarSesionCorresponsal:", result.data);
+                    resolve(result.data);
+                })
+                .catch((err) => {
+                    console.error("❌ Error en ValidarSesionCorresponsal:", err);
                     resolve({
                         bpOutReq: {
                             codigoError: CodigosError.ErrorGeneral.Codigo.toString(),
                             mensajeError: CodigosError.ErrorGeneral.Mensaje,
                             fechaHora: new Date(),
                         },
-                    })
-                );
+                    });
+                });
         });
     }
 }

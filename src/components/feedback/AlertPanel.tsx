@@ -55,7 +55,7 @@ const AlertPanel: React.FC = () => {
             <div className="alert-buttons">
               {alert.showAcceptButton && (
                 <button
-                  className="alert-accept-btn"
+                  className="alert-btn alert-btn--accept"
                   onClick={() => handleAccept(alert)}
                 >
                   Aceptar
@@ -64,7 +64,7 @@ const AlertPanel: React.FC = () => {
 
               {alert.action && (
                 <button
-                  className="alert-action-btn"
+                  className="alert-btn alert-btn--action"
                   onClick={() => {
                     alert.action?.onClick();
                     removeAlert(alert.id);

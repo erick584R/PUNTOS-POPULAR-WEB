@@ -19,13 +19,11 @@ import {
     SetIp,
 } from "@/helpers/helpers";
 import PopularInput from "../forms/PopularInput";
-import { useSignalR } from "@/hooks/useSignalR";
 
 const LoginPage: React.FC = () => {
     const [initialLoad, setInitialLoad] = useState(true);
     const [loading, setLoading] = useState(false);
     const [remember, setRemember] = useState(false);
-    const [currentUserId, setCurrentUserId] = useState("");
     const [pendingLoginData, setPendingLoginData] = useState<any>(null);
     const notifyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -38,8 +36,6 @@ const LoginPage: React.FC = () => {
     };
 
     const { values, handleChange } = useFormHelper<UserLoginProps>(initialValues);
-
-    const { connectionRef, FinalizarSesion, MensajeRecibido, isConnected } = useSignalR(currentUserId);
 
     useEffect(() => {
         if (initialLoad) {
@@ -62,13 +58,6 @@ const LoginPage: React.FC = () => {
             SetIp();
         }
     }, [initialLoad, handleChange]);
-
-    useEffect(() => {
-        if (FinalizarSesion && MensajeRecibido) {
-            console.log("📢 Sesión cerrada desde otro dispositivo");
-            handleCloseSesion();
-        }
-    }, [FinalizarSesion, MensajeRecibido]);
 
     function handleRememberMe() {
         if (remember) {
@@ -110,57 +99,48 @@ const LoginPage: React.FC = () => {
             clearTimeout(notifyTimeoutRef.current);
         }
 
+        console.log("✅ Login completado, redirigiendo a dashboard...");
         window.location.href = "/dashboard";
     }
 
-    function handleCloseSesion() {
-        console.log("🚪 Cerrando sesión del dispositivo actual");
-        RemoveLocalStorage("user_name");
-        RemoveLocalStorage("device_id");
-        SaveSessionStorage("user_name", "");
-        SaveSessionStorage("user_token", "");
-        SaveSessionStorage("user_id", "");
-        setCurrentUserId("");
-
-        showError(
-            "Sesión Cerrada",
-            "Tu sesión ha sido cerrada debido a un inicio de sesión desde otro dispositivo."
-        );
-    }
-
+    // ✅ USAR SIGNALR GLOBAL QUE YA ESTÁ EN WINDOW
     async function notificarYProceder(usuario: string, response: any) {
         console.log(`📢 Notificando a otros dispositivos del usuario: ${usuario}`);
         
         let intentos = 0;
-        const maxIntentos = 15;
+        const maxIntentos = 20;
 
         const interval = setInterval(async () => {
             intentos++;
-            console.log(`⏳ Esperando SignalR... Intento ${intentos}/${maxIntentos} (Estado: ${connectionRef.current?.state})`);
             
-            if (connectionRef.current?.state === "Connected") {
-                console.log("✅ SignalR conectado, enviando notificación...");
+            // ✅ Acceder a la conexión global desde window
+            const globalConnection = (window as any).__signalRConnection;
+            
+            console.log(`⏳ Intento ${intentos}/${maxIntentos} - Estado SignalR: ${globalConnection?.state || "No disponible"}`);
+            
+            if (globalConnection && globalConnection.state === "Connected") {
+                console.log("✅ SignalR global conectado, enviando notificación...");
                 clearInterval(interval);
 
                 try {
-                    await connectionRef.current.invoke("NotificarDispositivos", usuario);
-                    console.log("✅ Notificación enviada exitosamente");
+                    await globalConnection.invoke("NotificarDispositivos", usuario);
+                    console.log("✅ Notificación enviada exitosamente a otros dispositivos");
                 } catch (err) {
                     console.error("❌ Error enviando notificación:", err);
                 }
 
                 notifyTimeoutRef.current = setTimeout(() => {
                     procesoLoginExitoso(response);
-                }, 500);
+                }, 800);
             } else if (intentos >= maxIntentos) {
-                console.warn("⚠️ SignalR no conectó, procediendo sin notificación");
+                console.warn("⚠️ SignalR no conectó después de varios intentos, procediendo sin notificación");
                 clearInterval(interval);
                 
                 notifyTimeoutRef.current = setTimeout(() => {
                     procesoLoginExitoso(response);
                 }, 300);
             }
-        }, 200);
+        }, 250);
     }
 
     async function handleLogin(e: React.FormEvent) {
@@ -171,19 +151,20 @@ const LoginPage: React.FC = () => {
             const response = await SesionService.IniciarSesionPEL(values);
 
             if (response.bpOutReq.codigoError === "0") {
+                // ✅ CÓDIGO 0: Login exitoso
                 console.log("✅ Login exitoso - Código 0");
-                console.log("Response:", response);
+                console.log("tieneSesionActiva:", response.tieneSesionActiva);
 
                 const usuarioUpper = values.user.toUpperCase();
-                console.log(`🔌 Estableciendo usuario para SignalR: ${usuarioUpper}`);
-                
-                setCurrentUserId(usuarioUpper);
                 setPendingLoginData(response);
 
                 if (response.tieneSesionActiva) {
-                    console.log("⚠️ Había sesión activa en otro dispositivo, se cerró automáticamente");
+                    // ✅ Había sesión activa, el backend ya la cerró
+                    // Notificar a otros dispositivos que se cierren
+                    console.log("⚠️ Sesión activa cerrada automáticamente, notificando otros dispositivos...");
                     await notificarYProceder(usuarioUpper, response);
                 } else {
+                    // ✅ No hay sesión activa previa
                     console.log("✅ No hay sesión activa previa");
                     procesoLoginExitoso(response);
                 }
@@ -191,10 +172,10 @@ const LoginPage: React.FC = () => {
             }
 
             if (response.bpOutReq.codigoError === "27") {
-                console.log("⚠️ Código 27 - Sesión activa en otro dispositivo");
+                // ✅ CÓDIGO 27: Hay sesión activa en otro dispositivo
+                console.log("⚠️ Código 27 - Sesión activa detectada en otro dispositivo");
 
                 const usuarioUpper = values.user.toUpperCase();
-                setCurrentUserId(usuarioUpper);
                 setPendingLoginData(response);
 
                 showError(
@@ -207,15 +188,16 @@ const LoginPage: React.FC = () => {
                             setLoading(true);
 
                             try {
-                                // ✅ CORREGIDO: Pasar usuario, token (no contraseña), y ctnro
+                                // ✅ Llamar a validar-sesion-corresponsal para cerrar la sesión anterior
                                 const validateResponse = await SesionService.ValidarSesionCorresponsal(
-                                    values.user,        // ← Usuario
-                                    response.token,     // ← Token obtenido del login
-                                    response.ctnro      // ← CTNRO
+                                    values.user,        // Usuario
+                                    response.token,     // Token obtenido del login
+                                    response.ctnro      // CTNRO
                                 );
 
                                 if (validateResponse.bpOutReq.codigoError === "0") {
-                                    console.log("✅ Sesión anterior cerrada exitosamente");
+                                    console.log("✅ Sesión anterior cerrada exitosamente via SP");
+                                    // ✅ Ahora notificar a otros dispositivos
                                     await notificarYProceder(usuarioUpper, response);
                                 } else {
                                     console.error("❌ Error cerrando sesión:", validateResponse.bpOutReq.mensajeError);
@@ -236,13 +218,14 @@ const LoginPage: React.FC = () => {
                 return;
             }
 
-            console.error("❌ Error de login:", response.bpOutReq.codigoError);
+            // ❌ Otros errores
+            console.error("❌ Error de login:", response.bpOutReq.codigoError, response.bpOutReq.mensajeError);
             showError(
                 `Error ${response.bpOutReq.codigoError}`,
                 response.bpOutReq.mensajeError
             );
         } catch (error) {
-            console.error("❌ Excepción:", error);
+            console.error("❌ Excepción en handleLogin:", error);
             showError(
                 "Error de Conexión",
                 "No se pudo establecer conexión con el servidor. Intente más tarde."

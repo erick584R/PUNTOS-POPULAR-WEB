@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import "./globals.css"; // <-- Esto cargará los estilos para todo el sitio
+import { SignalRProvider } from "@/providers/SignalRProvider";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Puntos Popular",
-  description: "Portal de Agentes Corresponsales - Banco Popular Honduras",
+  description: "Sistema de Puntos Popular",
 };
 
 export default function RootLayout({
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        {children}
+        <SignalRProvider>
+          {children}
+        </SignalRProvider>
       </body>
     </html>
   );

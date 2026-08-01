@@ -104,16 +104,24 @@ const LoginPage: React.FC = () => {
         return;
       }
 
+      // Mostrar error con botón de aceptar solo si es código 27
+      const showAcceptButton = response.bpOutReq.codigoError === "27";
+
       showError(
         `Error ${response.bpOutReq.codigoError}`,
         response.bpOutReq.mensajeError,
-        { duration: 5000 }
+        {
+          showAcceptButton,
+          onAccept: () => {
+            // Lógica opcional al aceptar el error 27
+            console.log("Error 27 aceptado");
+          },
+        }
       );
     } catch (error) {
       showError(
         "Error de Conexión",
-        "No se pudo establecer conexión con el servidor. Intente más tarde.",
-        { duration: 5000 }
+        "No se pudo establecer conexión con el servidor. Intente más tarde."
       );
     } finally {
       setLoading(false);

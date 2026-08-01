@@ -9,6 +9,8 @@ export interface Alert {
   message: string;
   duration?: number;
   icon?: React.ReactNode;
+  showAcceptButton?: boolean;
+  onAccept?: () => void;
   action?: {
     label: string;
     onClick: () => void;

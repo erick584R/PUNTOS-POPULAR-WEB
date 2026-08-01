@@ -3,6 +3,8 @@ import { useAlertStore, Alert, AlertType } from "@/store/alertStore";
 interface UseAlertOptions {
   duration?: number;
   icon?: React.ReactNode;
+  showAcceptButton?: boolean;
+  onAccept?: () => void;
   action?: {
     label: string;
     onClick: () => void;
@@ -24,6 +26,8 @@ export const useAlert = () => {
       message,
       duration: options?.duration,
       icon: options?.icon,
+      showAcceptButton: options?.showAcceptButton,
+      onAccept: options?.onAccept,
       action: options?.action,
     });
   };

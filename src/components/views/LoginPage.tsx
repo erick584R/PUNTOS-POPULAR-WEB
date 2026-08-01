@@ -9,6 +9,8 @@ import useFormHelper from "@/helpers/useFormHelper";
 import { DefaultValidator } from "@/helpers/validators";
 import SesionServices from "@/services/sesion.services";
 import PopularBackdrop from "../feedback/Backdrop";
+import AlertPanel from "../feedback/AlertPanel";
+import { useAlert } from "@/hooks/useAlert";
 import {
   GetLocalStorage,
   RemoveLocalStorage,
@@ -22,7 +24,7 @@ const LoginPage: React.FC = () => {
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
-  const [errorResponse, setErrorResponse] = useState("");
+  const { showError } = useAlert();
 
   const SesionService = new SesionServices();
 
@@ -70,7 +72,6 @@ const LoginPage: React.FC = () => {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setErrorResponse("");
 
     try {
       const response = await SesionService.IniciarSesionPEL(values);
@@ -78,18 +79,14 @@ const LoginPage: React.FC = () => {
       if (response.bpOutReq.codigoError === "0") {
         handleRememberMe();
 
-        // Guardamos los datos principales en sessionStorage
         SaveSessionStorage("user_name", values.user.toUpperCase());
         SaveSessionStorage("user_token", response.token);
         SaveSessionStorage("sesion_info", response.info);
         SaveSessionStorage("user_id", response.ctnro);
         SaveSessionStorage("user_name_data", response.nombreCliente);
         SaveSessionStorage("user_main_disp", response.dispositivoPrincipal);
-        
-        // AQUÍ GUARDAMOS LA CUENTA BP REQUERIDA
         SaveSessionStorage("user_account", response.cuentaBP);
 
-        // RESPALDAMOS TODO EL PERFIL ADICIONAL POR SI SE OCUPA DESPUÉS
         SaveSessionStorage("user_profile", JSON.stringify({
           idCorresponsal: response.idCorresponsal,
           idUsuario: response.idUsuario,
@@ -107,11 +104,17 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      setErrorResponse(
-        `${response.bpOutReq.codigoError} - ${response.bpOutReq.mensajeError}`
+      showError(
+        `Error ${response.bpOutReq.codigoError}`,
+        response.bpOutReq.mensajeError,
+        { duration: 5000 }
       );
-    } catch {
-      setErrorResponse("Error al iniciar sesión.");
+    } catch (error) {
+      showError(
+        "Error de Conexión",
+        "No se pudo establecer conexión con el servidor. Intente más tarde.",
+        { duration: 5000 }
+      );
     } finally {
       setLoading(false);
     }
@@ -119,6 +122,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <main className="popular-login-page">
+      <AlertPanel />
       {loading && <PopularBackdrop open={true} />}
       <div className="popular-login-bg" />
       <section className="popular-login-card">
@@ -180,9 +184,6 @@ const LoginPage: React.FC = () => {
             <button type="button" className="popular-forgot-btn">
               ¿Olvidaste tu contraseña?
             </button>
-            {errorResponse && (
-              <div className="popular-error-message">{errorResponse}</div>
-            )}
           </form>
         </div>
       </section>

@@ -22,7 +22,7 @@ export default class SesionServices {
                 ipDispositivo: GetSessionStorage("device_ip"),
                 ctnro: "",
                 usuario: user.user,
-                token: user.password,
+                token: user.password,  // ← Aquí va la contraseña
             },
             Dispositivo: {
                 Modelo: navigator.appVersion,
@@ -71,20 +71,28 @@ export default class SesionServices {
         });
     }
 
-    // ✅ ACTUALIZADO: Ahora recibe ctnro como parámetro
-    public async ValidarSesionCorresponsal(user: UserLoginProps, ctnro: string): Promise<GenericResponse> {
+    // ✅ CORREGIDO: Ahora recibe el token obtenido del login
+    public async ValidarSesionCorresponsal(
+        usuario: string, 
+        token: string,      // ← Token del login, no contraseña
+        ctnro: string
+    ): Promise<GenericResponse> {
         const requestBody = {
             bpInReq: {
                 canal: parseInt(process.env.NEXT_PUBLIC_CANAL_CORRESPONSAL || "3"),
                 dispositivoFisico: `${navigator.appName}|N/A|${navigator.appVersion}|${navigator.platform}|WEB|NAVEGADOR|${GetLocalStorage("device_id")}`,
                 ipDispositivo: GetSessionStorage("device_ip"),
-                ctnro: ctnro,  // ✅ IMPORTANTE: Enviar ctnro
-                usuario: user.user,
-                token: user.password,
+                ctnro: ctnro,
+                usuario: usuario,
+                token: token,  // ← AQUÍ VA EL TOKEN DEL LOGIN, NO LA CONTRASEÑA
             },
         };
 
-        console.log("📤 Enviando ValidarSesionCorresponsal con:", requestBody);
+        console.log("📤 Enviando ValidarSesionCorresponsal con:", {
+            usuario: requestBody.bpInReq.usuario,
+            ctnro: requestBody.bpInReq.ctnro,
+            token: `${requestBody.bpInReq.token.substring(0, 20)}...` // Solo primeros 20 caracteres para seguridad
+        });
 
         return new Promise<GenericResponse>((resolve) => {
             Axios.post("/api/Seguridad/v1/BancoPopular/validar-sesion-corresponsal", requestBody)

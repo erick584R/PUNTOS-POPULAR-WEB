@@ -39,7 +39,6 @@ const LoginPage: React.FC = () => {
 
     const { values, handleChange } = useFormHelper<UserLoginProps>(initialValues);
 
-    // ✅ USAR HOOK DE SIGNALR
     const { connectionRef, FinalizarSesion, MensajeRecibido, isConnected } = useSignalR(currentUserId);
 
     useEffect(() => {
@@ -64,7 +63,6 @@ const LoginPage: React.FC = () => {
         }
     }, [initialLoad, handleChange]);
 
-    // ✅ CUANDO RECIBE NOTIFICACIÓN DE OTRO DISPOSITIVO
     useEffect(() => {
         if (FinalizarSesion && MensajeRecibido) {
             console.log("📢 Sesión cerrada desde otro dispositivo");
@@ -209,10 +207,11 @@ const LoginPage: React.FC = () => {
                             setLoading(true);
 
                             try {
-                                // ✅ IMPORTANTE: Pasar ctnro a ValidarSesionCorresponsal
+                                // ✅ CORREGIDO: Pasar usuario, token (no contraseña), y ctnro
                                 const validateResponse = await SesionService.ValidarSesionCorresponsal(
-                                    values,
-                                    response.ctnro  // ← ENVIAR CTNRO
+                                    values.user,        // ← Usuario
+                                    response.token,     // ← Token obtenido del login
+                                    response.ctnro      // ← CTNRO
                                 );
 
                                 if (validateResponse.bpOutReq.codigoError === "0") {

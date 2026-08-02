@@ -34,7 +34,6 @@ export default function SistemaLayout({ children }: { children: React.ReactNode 
   return (
     <div className="popular-dashboard-layout">
       <Sidebar onToggle={(collapsed) => setIsSidebarCollapsed(collapsed)} />
-
       <div className={`popular-content-wrapper ${isSidebarCollapsed ? "expanded" : ""}`}>
         <Navbar />
         <main className="popular-main-content">{children}</main>

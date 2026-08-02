@@ -78,85 +78,27 @@ export function getDeviceBrand(): string {
 }
 
 export function getDeviceModel(): string {
-  const userAgent = navigator.userAgent;
-
-  const iphoneMatch = userAgent.match(/iPhone OS (\d+)/);
-  if (iphoneMatch) return `iPhone (iOS ${iphoneMatch[1]})`;
-
-  const ipadMatch = userAgent.match(/iPad/);
-  if (ipadMatch) return "iPad";
-
-  const windowsMatch = userAgent.match(/Windows NT ([\d.]+)/);
-  if (windowsMatch) return `Windows ${windowsMatch[1]}`;
-
-  const androidMatch = userAgent.match(/Android ([\d.]+)/);
-  if (androidMatch) return `Android ${androidMatch[1]}`;
-
-  const macMatch = userAgent.match(/Mac OS X ([\d_]+)/);
-  if (macMatch) return `macOS ${macMatch[1].replace(/_/g, ".")}`;
-
-  return userAgent.substring(0, 50);
-}
-
-export function generateDeviceFingerprint(): string {
-  const screenResolution = `${screen.width}x${screen.height}`;
-  const platform = navigator.platform;
-  const language = navigator.language;
-  const hardwareConcurrency = navigator.hardwareConcurrency || "unknown";
-  const deviceMemory = (navigator as any).deviceMemory || "unknown";
-
-  const fingerprint = `${screenResolution}|${platform}|${language}|${hardwareConcurrency}|${deviceMemory}`;
-
-  let hash = 0;
-  for (let i = 0; i < fingerprint.length; i++) {
-    const char = fingerprint.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-
-  return Math.abs(hash).toString(36);
+  const ua = navigator.userAgent;
+  if (ua.includes("Windows")) return "Windows PC";
+  if (ua.includes("Mac OS X")) return "Mac";
+  if (ua.includes("Android")) return "Android";
+  if (ua.includes("iPhone")) return "iPhone";
+  if (ua.includes("iPad")) return "iPad";
+  if (ua.includes("Linux")) return "Linux";
+  return "N/A";
 }
 
 export function GetOrCreateDeviceFingerprint(): string {
-  let fingerprint = GetLocalStorage("device_fingerprint");
+  const existing = GetLocalStorage("device_fingerprint");
+  if (existing) return existing;
 
-  if (!fingerprint) {
-    fingerprint = generateDeviceFingerprint();
-    SaveLocalStorage("device_fingerprint", fingerprint);
-  }
+  const fingerprint =
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15);
 
+  SaveLocalStorage("device_fingerprint", fingerprint);
   return fingerprint;
 }
-
-export function DefaultBPinReq(): Promise<bpInReq> {
-  return new Promise<bpInReq>(async (resolve) => {
-    const deviceBrand = getDeviceBrand();
-    const deviceModel = getDeviceModel();
-    const deviceId = GetLocalStorage("device_id");
-    const deviceFingerprint = GetOrCreateDeviceFingerprint();
-
-    const disp = `${deviceBrand}|${deviceModel}|${deviceFingerprint}|${navigator.platform}|WEB|NAVEGADOR|${deviceId}`;
-
-    const response = {
-      canal: parseInt(process.env.NEXT_PUBLIC_CANAL || "3"),
-      dispositivoFisico: disp,
-      ipDispositivo: "",
-      ctnro: GetSessionStorage("user_id"),
-      usuario: GetSessionStorage("user_name"),
-      token: GetSessionStorage("user_token"),
-    };
-
-    await SetIp();
-    response.ipDispositivo = GetSessionStorage("device_ip");
-
-    if (response.ctnro === "") response.ctnro = "0";
-
-    resolve(response);
-  });
-}
-
-
-
 
 export function HasActiveSession(): boolean {
   if (typeof window === "undefined") return false;
@@ -182,12 +124,7 @@ export function ClearCurrentSession(): void {
     "user_name_data",
     "user_main_disp",
     "user_profile",
-  ];
+  ] as const;
 
   sessionKeys.forEach((key) => sessionStorage.removeItem(key));
-}
-
-export function ClearLogoutData(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("user_name");
 }

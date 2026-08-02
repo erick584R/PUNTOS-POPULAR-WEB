@@ -5,10 +5,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   GetSessionStorage,
-  RemoveLocalStorage,
-  RemoveSessionStorage,
   ClearCurrentSession,
+  getDeviceBrand,
+  getDeviceModel,
+  GetOrCreateDeviceFingerprint,
+  GetLocalStorage,
 } from "@/helpers/helpers";
+import { useAlert } from "@/hooks/useAlert";
 import {
   BarChartOutlined,
   SwapHorizOutlined,
@@ -29,6 +32,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
   const [nombreUsuario, setNombreUsuario] = useState("");
   const pathname = usePathname();
   const router = useRouter();
+  const { showError } = useAlert();
 
   useEffect(() => {
     setMounted(true);
@@ -44,7 +48,6 @@ export default function Sidebar({ onToggle }: SidebarProps) {
 
   const limpiarFrontend = () => {
     ClearCurrentSession();
-    sessionStorage.removeItem("__signalRConnection");
     delete (window as any).__signalRConnection;
   };
 
@@ -55,11 +58,17 @@ export default function Sidebar({ onToggle }: SidebarProps) {
     const usuario = GetSessionStorage("user_name");
     const ctnro = GetSessionStorage("user_id");
     const ipDispositivo = GetSessionStorage("device_ip");
-    const dispositivoPrincipal = GetSessionStorage("user_main_disp");
+    const deviceId = GetLocalStorage("device_id");
+
+    const deviceBrand = getDeviceBrand();
+    const deviceModel = getDeviceModel();
+    const deviceFingerprint = GetOrCreateDeviceFingerprint();
+
+    const dispositivoFisico = `${deviceBrand}|${deviceModel}|${deviceFingerprint}|${navigator.platform}|WEB|NAVEGADOR|${deviceId}`;
 
     const bpInReq = {
       canal: parseInt(process.env.NEXT_PUBLIC_CANAL_CORRESPONSAL || "3"),
-      dispositivoFisico: dispositivoPrincipal || "",
+      dispositivoFisico,
       ipDispositivo,
       ctnro,
       usuario,
@@ -80,28 +89,29 @@ export default function Sidebar({ onToggle }: SidebarProps) {
       );
 
       const data = await response.json();
+
       const codigo =
         data?.bpOutReq?.codigoError ??
         data?.bpOutReq?.CodigoError ??
-        data?.CodigoError ??
-        data?.codigoError;
+        data?.codigoError ??
+        data?.CodigoError;
 
       const mensaje =
         data?.bpOutReq?.mensajeError ??
         data?.bpOutReq?.MensajeError ??
-        data?.MensajeError ??
         data?.mensajeError ??
+        data?.MensajeError ??
         "Falló el cierre de la sesión.";
 
-      if (response.ok && codigo === "0") {
+      if (codigo === "0") {
         limpiarFrontend();
         router.replace("/");
         return;
       }
 
-      alert(`Error ${codigo ?? "desconocido"}: ${mensaje}`);
+      showError(`Error ${codigo ?? "desconocido"}`, mensaje);
     } catch {
-      alert("No se pudo cerrar la sesión. Intente nuevamente.");
+      showError("Error", "No se pudo cerrar la sesión. Intente nuevamente.");
     }
   };
 

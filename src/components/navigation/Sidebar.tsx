@@ -2,8 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { GetSessionStorage } from "@/helpers/helpers";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  GetSessionStorage,
+  RemoveLocalStorage,
+  RemoveSessionStorage,
+  ClearCurrentSession,
+} from "@/helpers/helpers";
 import {
   BarChartOutlined,
   SwapHorizOutlined,
@@ -23,6 +28,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
   const [mounted, setMounted] = useState(false);
   const [nombreUsuario, setNombreUsuario] = useState("");
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
@@ -33,8 +39,69 @@ export default function Sidebar({ onToggle }: SidebarProps) {
   const handleToggle = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
-    if (onToggle) {
-      onToggle(newState);
+    if (onToggle) onToggle(newState);
+  };
+
+  const limpiarFrontend = () => {
+    ClearCurrentSession();
+    sessionStorage.removeItem("__signalRConnection");
+    delete (window as any).__signalRConnection;
+  };
+
+  const handleLogout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+
+    const token = GetSessionStorage("user_token");
+    const usuario = GetSessionStorage("user_name");
+    const ctnro = GetSessionStorage("user_id");
+    const ipDispositivo = GetSessionStorage("device_ip");
+    const dispositivoPrincipal = GetSessionStorage("user_main_disp");
+
+    const bpInReq = {
+      canal: parseInt(process.env.NEXT_PUBLIC_CANAL_CORRESPONSAL || "3"),
+      dispositivoFisico: dispositivoPrincipal || "",
+      ipDispositivo,
+      ctnro,
+      usuario,
+      token,
+    };
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_GATEWAY_CORRESPONSAL}/api/Seguridad/v1/BancoPopular/cerrar-sesion-corresponsal`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ bpInReq }),
+        }
+      );
+
+      const data = await response.json();
+      const codigo =
+        data?.bpOutReq?.codigoError ??
+        data?.bpOutReq?.CodigoError ??
+        data?.CodigoError ??
+        data?.codigoError;
+
+      const mensaje =
+        data?.bpOutReq?.mensajeError ??
+        data?.bpOutReq?.MensajeError ??
+        data?.MensajeError ??
+        data?.mensajeError ??
+        "Falló el cierre de la sesión.";
+
+      if (response.ok && codigo === "0") {
+        limpiarFrontend();
+        router.replace("/");
+        return;
+      }
+
+      alert(`Error ${codigo ?? "desconocido"}: ${mensaje}`);
+    } catch {
+      alert("No se pudo cerrar la sesión. Intente nuevamente.");
     }
   };
 
@@ -89,10 +156,10 @@ export default function Sidebar({ onToggle }: SidebarProps) {
       </nav>
 
       <div className="popular-sidebar-footer">
-        <Link href="/" className="popular-sidebar-item logout-item">
+        <a href="/" className="popular-sidebar-item logout-item" onClick={handleLogout}>
           <LogoutOutlined className="popular-sidebar-icon" />
           <span className="menu-label">Cerrar Sesión</span>
-        </Link>
+        </a>
         {!isCollapsed && <p className="popular-copyright">© 2026 Banco Popular</p>}
       </div>
     </aside>

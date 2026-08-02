@@ -154,3 +154,40 @@ export function DefaultBPinReq(): Promise<bpInReq> {
     resolve(response);
   });
 }
+
+
+
+
+export function HasActiveSession(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const token = sessionStorage.getItem("user_token");
+  const userName = sessionStorage.getItem("user_name");
+  const userId = sessionStorage.getItem("user_id");
+  const sessionInfo = sessionStorage.getItem("sesion_info");
+
+  return !!token && !!userName && !!userId && !!sessionInfo;
+}
+
+export function ClearCurrentSession(): void {
+  if (typeof window === "undefined") return;
+
+  const sessionKeys = [
+    "user_id",
+    "user_account",
+    "user_token",
+    "sesion_info",
+    "device_ip",
+    "user_name",
+    "user_name_data",
+    "user_main_disp",
+    "user_profile",
+  ];
+
+  sessionKeys.forEach((key) => sessionStorage.removeItem(key));
+}
+
+export function ClearLogoutData(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("user_name");
+}

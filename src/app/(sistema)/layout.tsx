@@ -1,26 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/navigation/Sidebar";
 import Navbar from "@/components/navigation/Navbar";
+import { GetSessionStorage } from "@/helpers/helpers";
 
 export default function SistemaLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = GetSessionStorage("user_token");
+    const userName = GetSessionStorage("user_name");
+    const userId = GetSessionStorage("user_id");
+    const sessionInfo = GetSessionStorage("sesion_info");
+
+    const hasValidSession = !!token && !!userName && !!userId && !!sessionInfo;
+
+    if (!hasValidSession) {
+      router.replace("/");
+      return;
+    }
+
+    setIsCheckingAuth(false);
+  }, [router]);
+
+  if (isCheckingAuth) {
+    return null;
+  }
 
   return (
     <div className="popular-dashboard-layout">
-      {/* El menú lateral se invoca una sola vez de forma global */}
       <Sidebar onToggle={(collapsed) => setIsSidebarCollapsed(collapsed)} />
-      
-      {/* El contenedor derecho completo reacciona expandiéndose si el menú se minimiza */}
-      <div className={`popular-content-wrapper ${isSidebarCollapsed ? "expanded" : ""}`}>
-        {/* Navbar global fijo en la parte superior */}
-        <Navbar />
 
-        {/* Contenedor de las vistas internas con espaciado superior optimizado */}
-        <main className="popular-main-content">
-          {children}
-        </main>
+      <div className={`popular-content-wrapper ${isSidebarCollapsed ? "expanded" : ""}`}>
+        <Navbar />
+        <main className="popular-main-content">{children}</main>
       </div>
     </div>
   );

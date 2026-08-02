@@ -32,7 +32,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
   const [nombreUsuario, setNombreUsuario] = useState("");
   const pathname = usePathname();
   const router = useRouter();
-  const { showError } = useAlert();
+  const { showError, showSuccess } = useAlert();
 
   useEffect(() => {
     setMounted(true);
@@ -53,6 +53,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
 
   const handleLogout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
+    e.stopPropagation();
 
     const token = GetSessionStorage("user_token");
     const usuario = GetSessionStorage("user_name");
@@ -88,30 +89,38 @@ export default function Sidebar({ onToggle }: SidebarProps) {
         }
       );
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
 
       const codigo =
         data?.bpOutReq?.codigoError ??
         data?.bpOutReq?.CodigoError ??
         data?.codigoError ??
-        data?.CodigoError;
+        data?.CodigoError ??
+        (response.ok ? "0" : undefined);
 
       const mensaje =
         data?.bpOutReq?.mensajeError ??
         data?.bpOutReq?.MensajeError ??
         data?.mensajeError ??
         data?.MensajeError ??
-        "Falló el cierre de la sesión.";
+        (response.ok ? "Sesión cerrada correctamente." : "Falló el cierre de la sesión.");
 
-      if (codigo === "0") {
-        limpiarFrontend();
-        router.replace("/");
-        return;
+      if (codigo !== "0") {
+        showError(`Error ${codigo ?? "desconocido"}`, mensaje);
+        return; // IMPORTANTE: salir aquí, sin limpiar ni redirigir
       }
 
-      showError(`Error ${codigo ?? "desconocido"}`, mensaje);
+      limpiarFrontend();
+      showSuccess("Sesión cerrada", "Tu sesión fue cerrada correctamente.");
+      router.replace("/");
     } catch {
       showError("Error", "No se pudo cerrar la sesión. Intente nuevamente.");
+      return;
     }
   };
 

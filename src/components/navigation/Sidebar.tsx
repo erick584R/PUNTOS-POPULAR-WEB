@@ -53,7 +53,6 @@ export default function Sidebar({ onToggle }: SidebarProps) {
 
   const handleLogout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    e.stopPropagation();
 
     const token = GetSessionStorage("user_token");
     const usuario = GetSessionStorage("user_name");
@@ -89,19 +88,13 @@ export default function Sidebar({ onToggle }: SidebarProps) {
         }
       );
 
-      let data: any = null;
-      try {
-        data = await response.json();
-      } catch {
-        data = null;
-      }
+      const data = await response.json().catch(() => null);
 
       const codigo =
         data?.bpOutReq?.codigoError ??
         data?.bpOutReq?.CodigoError ??
         data?.codigoError ??
-        data?.CodigoError ??
-        (response.ok ? "0" : undefined);
+        data?.CodigoError;
 
       const mensaje =
         data?.bpOutReq?.mensajeError ??
@@ -110,17 +103,18 @@ export default function Sidebar({ onToggle }: SidebarProps) {
         data?.MensajeError ??
         (response.ok ? "Sesión cerrada correctamente." : "Falló el cierre de la sesión.");
 
-      if (codigo !== "0") {
-        showError(`Error ${codigo ?? "desconocido"}`, mensaje);
-        return; // IMPORTANTE: salir aquí, sin limpiar ni redirigir
+      if (response.ok && codigo === "0") {
+        showSuccess("Éxito", "Se ha cerrado la sesión exitosamente.");
+        setTimeout(() => {
+          limpiarFrontend();
+          router.replace("/");
+        }, 900);
+        return;
       }
 
-      limpiarFrontend();
-      showSuccess("Sesión cerrada", "Tu sesión fue cerrada correctamente.");
-      router.replace("/");
+      showError(`Error ${codigo ?? response.status ?? "desconocido"}`, mensaje);
     } catch {
       showError("Error", "No se pudo cerrar la sesión. Intente nuevamente.");
-      return;
     }
   };
 

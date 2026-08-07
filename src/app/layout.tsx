@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { SignalRProvider } from "@/providers/SignalRProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,11 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>
-        <SignalRProvider>
-          {children}
-        </SignalRProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

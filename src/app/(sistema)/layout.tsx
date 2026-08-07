@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/navigation/Sidebar";
 import Navbar from "@/components/navigation/Navbar";
 import { GetSessionStorage } from "@/helpers/helpers";
+import { useSignalRGlobal } from "@/hooks/useSignalRGlobal";
 
 export default function SistemaLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [hasValidSession, setHasValidSession] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -17,9 +19,10 @@ export default function SistemaLayout({ children }: { children: React.ReactNode 
     const userId = GetSessionStorage("user_id");
     const sessionInfo = GetSessionStorage("sesion_info");
 
-    const hasValidSession = !!token && !!userName && !!userId && !!sessionInfo;
+    const valid = !!token && !!userName && !!userId && !!sessionInfo;
+    setHasValidSession(valid);
 
-    if (!hasValidSession) {
+    if (!valid) {
       router.replace("/");
       return;
     }
@@ -30,6 +33,31 @@ export default function SistemaLayout({ children }: { children: React.ReactNode 
   if (isCheckingAuth) {
     return null;
   }
+
+  if (!hasValidSession) {
+    return null;
+  }
+
+  return (
+    <SistemaContent
+      isSidebarCollapsed={isSidebarCollapsed}
+      setIsSidebarCollapsed={setIsSidebarCollapsed}
+    >
+      {children}
+    </SistemaContent>
+  );
+}
+
+function SistemaContent({
+  children,
+  isSidebarCollapsed,
+  setIsSidebarCollapsed,
+}: {
+  children: React.ReactNode;
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  useSignalRGlobal();
 
   return (
     <div className="popular-dashboard-layout">

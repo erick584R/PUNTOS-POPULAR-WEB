@@ -9,7 +9,6 @@ import useFormHelper from "@/helpers/useFormHelper";
 import { DefaultValidator } from "@/helpers/validators";
 import SesionServices from "@/services/sesion.services";
 import PopularBackdrop from "../feedback/Backdrop";
-// import AlertPanel from "../feedback/AlertPanel";
 import { useAlert } from "@/hooks/useAlert";
 import {
   GetLocalStorage,
@@ -28,7 +27,7 @@ const LoginPage: React.FC = () => {
   const [pendingLoginData, setPendingLoginData] = useState<any>(null);
   const notifyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { showError } = useAlert();
+  const { showError, showSuccess } = useAlert();
   const SesionService = new SesionServices();
 
   const initialValues: UserLoginProps = {
@@ -39,25 +38,35 @@ const LoginPage: React.FC = () => {
   const { values, handleChange } = useFormHelper<UserLoginProps>(initialValues);
 
   useEffect(() => {
-    
     if (initialLoad) {
       setInitialLoad(false);
+
       const closedFlag = GetSessionStorage("session_closed_by_other_device");
-    const closedMessage = GetSessionStorage("session_closed_message");
+      const closedMessage = GetSessionStorage("session_closed_message");
+      const logoutFlag = GetSessionStorage("logout_success");
+      const logoutMessage = GetSessionStorage("logout_success_message");
 
-    if (closedFlag === "1") {
-      showError(
-        "Sesión Cerrada",
-        closedMessage ||
-          "Tu sesión ha sido cerrada porque iniciaste sesión desde otro dispositivo."
-      );
+      if (closedFlag === "1") {
+        showError(
+          "Sesión Cerrada",
+          closedMessage ||
+            "Tu sesión ha sido cerrada porque iniciaste sesión desde otro dispositivo."
+        );
 
-      sessionStorage.removeItem("session_closed_by_other_device");
-      sessionStorage.removeItem("session_closed_message");
-    }
+        sessionStorage.removeItem("session_closed_by_other_device");
+        sessionStorage.removeItem("session_closed_message");
+      }
 
+      if (logoutFlag === "1") {
+        showSuccess(
+          "Éxito",
+          logoutMessage || "Se ha cerrado la sesión exitosamente."
+        );
 
-      
+        sessionStorage.removeItem("logout_success");
+        sessionStorage.removeItem("logout_success_message");
+      }
+
       const user_name = GetLocalStorage("user_name");
       const device_id = GetLocalStorage("device_id");
 
@@ -75,7 +84,7 @@ const LoginPage: React.FC = () => {
 
       SetIp();
     }
-  }, [initialLoad, handleChange]);
+  }, [initialLoad, handleChange, showError, showSuccess]);
 
   function handleRememberMe() {
     if (remember) {
@@ -124,7 +133,6 @@ const LoginPage: React.FC = () => {
     window.location.href = "/dashboard";
   }
 
-  // ✅ USAR SIGNALR GLOBAL QUE YA ESTÁ EN WINDOW
   async function notificarYProceder(usuario: string, response: any) {
     console.log(`📢 Notificando a otros dispositivos del usuario: ${usuario}`);
 
@@ -134,7 +142,6 @@ const LoginPage: React.FC = () => {
     const interval = setInterval(async () => {
       intentos++;
 
-      // ✅ Acceder a la conexión global desde window
       const globalConnection = (window as any).__signalRConnection;
 
       console.log(
@@ -147,9 +154,7 @@ const LoginPage: React.FC = () => {
 
         try {
           await globalConnection.invoke("NotificarDispositivos", usuario);
-          console.log(
-            "✅ Notificación enviada exitosamente a otros dispositivos",
-          );
+          console.log("✅ Notificación enviada exitosamente a otros dispositivos");
         } catch (err) {
           console.error("❌ Error enviando notificación:", err);
         }
@@ -178,127 +183,111 @@ const LoginPage: React.FC = () => {
       const response = await SesionService.IniciarSesionPEL(values);
 
       if (response.bpOutReq.codigoError === "0") {
-        // ✅ CÓDIGO 0: Login exitoso
-        console.log("✅ Login exitoso - Código 0");
-        console.log("tieneSesionActiva:", response.tieneSesionActiva);
-
         const usuarioUpper = values.user.toUpperCase();
         setPendingLoginData(response);
 
         if (response.tieneSesionActiva) {
-          // ✅ Había sesión activa, el backend ya la cerró
-          // Notificar a otros dispositivos que se cierren
-          console.log(
-            "⚠️ Sesión activa cerrada automáticamente, notificando otros dispositivos...",
-          );
           await notificarYProceder(usuarioUpper, response);
         } else {
-          // ✅ No hay sesión activa previa
-          console.log("✅ No hay sesión activa previa");
           procesoLoginExitoso(response);
         }
         return;
       }
 
       if (response.bpOutReq.codigoError === "27") {
-    const usuarioUpper = values.user.toUpperCase();
-    setPendingLoginData(response);
+        const usuarioUpper = values.user.toUpperCase();
+        setPendingLoginData(response);
 
-    showError(
-        `Advertencia - ${response.bpOutReq.codigoError}`,
-        response.bpOutReq.mensajeError,
-        {
+        showError(
+          `Advertencia - ${response.bpOutReq.codigoError}`,
+          response.bpOutReq.mensajeError,
+          {
             showAcceptButton: true,
             onAccept: async () => {
-                console.log("✅ Usuario aceptó cerrar sesión anterior");
-                setLoading(true);
+              console.log("✅ Usuario aceptó cerrar sesión anterior");
+              setLoading(true);
 
-                try {
-                    const validateResponse = await SesionService.ValidarSesionCorresponsal(
-                        values.user,
-                        response.token,
-                        response.ctnro
-                    );
+              try {
+                const validateResponse = await SesionService.ValidarSesionCorresponsal(
+                  values.user,
+                  response.token,
+                  response.ctnro
+                );
 
-                    if (validateResponse.bpOutReq.codigoError !== "0") {
-                        showError(
-                            "Error",
-                            "No se pudo cerrar la sesión anterior. Intente nuevamente."
-                        );
-                        setLoading(false);
-                        return;
-                    }
-
-                    const globalConnection = (window as any).__signalRConnection;
-
-                    if (globalConnection && globalConnection.state === "Connected") {
-                        try {
-                            await globalConnection.invoke("NotificarDispositivos", usuarioUpper);
-                        } catch (err) {
-                            console.error("❌ Error enviando notificación SignalR:", err);
-                        }
-                    } else {
-                        try {
-                            const signalR = await import("@microsoft/signalr");
-
-                            const tempConnection = new signalR.HubConnectionBuilder()
-                                .withUrl(
-                                    `${process.env.NEXT_PUBLIC_API_GATEWAY_CORRESPONSAL}/api/Notificaciones/v1/BancoPopular/inicio-sesion-corresponsal?access_token=${encodeURIComponent(usuarioUpper)}`,
-                                    {
-                                        skipNegotiation: false,
-                                        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
-                                        withCredentials: true,
-                                    }
-                                )
-                                .build();
-
-                            await tempConnection.start();
-                            await tempConnection.invoke("NotificarDispositivos", usuarioUpper);
-                            await tempConnection.stop();
-                        } catch (err) {
-                            console.error("❌ Error creando conexión temporal SignalR:", err);
-                            showError(
-                                "Error",
-                                "No se pudo conectar SignalR para cerrar la sesión anterior."
-                            );
-                            setLoading(false);
-                            return;
-                        }
-                    }
-
-                    // ✅ Reintentar login después de validar y notificar
-                    const retryResponse = await SesionService.IniciarSesionPEL(values);
-
-                    if (retryResponse.bpOutReq.codigoError === "0") {
-                        if (retryResponse.tieneSesionActiva) {
-                            await notificarYProceder(usuarioUpper, retryResponse);
-                        } else {
-                            procesoLoginExitoso(retryResponse);
-                        }
-                    } else {
-                        showError(
-                            "Error",
-                            retryResponse.bpOutReq.mensajeError || "No se pudo completar el ingreso."
-                        );
-                    }
-                } catch (error) {
-                    console.error("❌ Excepción:", error);
-                    showError("Error", "Ocurrió un error procesando su solicitud.");
-                } finally {
-                    setLoading(false);
+                if (validateResponse.bpOutReq.codigoError !== "0") {
+                  showError(
+                    "Error",
+                    "No se pudo cerrar la sesión anterior. Intente nuevamente."
+                  );
+                  setLoading(false);
+                  return;
                 }
-            },
-        }
-    );
-    return;
-}
 
-      // ❌ Otros errores
-      console.error(
-        "❌ Error de login:",
-        response.bpOutReq.codigoError,
-        response.bpOutReq.mensajeError,
-      );
+                const globalConnection = (window as any).__signalRConnection;
+
+                if (globalConnection && globalConnection.state === "Connected") {
+                  try {
+                    await globalConnection.invoke("NotificarDispositivos", usuarioUpper);
+                  } catch (err) {
+                    console.error("❌ Error enviando notificación SignalR:", err);
+                  }
+                } else {
+                  try {
+                    const signalR = await import("@microsoft/signalr");
+
+                    const tempConnection = new signalR.HubConnectionBuilder()
+                      .withUrl(
+                        `${process.env.NEXT_PUBLIC_API_GATEWAY_CORRESPONSAL}/api/Notificaciones/v1/BancoPopular/inicio-sesion-corresponsal?access_token=${encodeURIComponent(usuarioUpper)}`,
+                        {
+                          skipNegotiation: false,
+                          transport:
+                            signalR.HttpTransportType.WebSockets |
+                            signalR.HttpTransportType.LongPolling,
+                          withCredentials: true,
+                        }
+                      )
+                      .build();
+
+                    await tempConnection.start();
+                    await tempConnection.invoke("NotificarDispositivos", usuarioUpper);
+                    await tempConnection.stop();
+                  } catch (err) {
+                    console.error("❌ Error creando conexión temporal SignalR:", err);
+                    showError(
+                      "Error",
+                      "No se pudo conectar SignalR para cerrar la sesión anterior."
+                    );
+                    setLoading(false);
+                    return;
+                  }
+                }
+
+                const retryResponse = await SesionService.IniciarSesionPEL(values);
+
+                if (retryResponse.bpOutReq.codigoError === "0") {
+                  if (retryResponse.tieneSesionActiva) {
+                    await notificarYProceder(usuarioUpper, retryResponse);
+                  } else {
+                    procesoLoginExitoso(retryResponse);
+                  }
+                } else {
+                  showError(
+                    "Error",
+                    retryResponse.bpOutReq.mensajeError || "No se pudo completar el ingreso."
+                  );
+                }
+              } catch (error) {
+                console.error("❌ Excepción:", error);
+                showError("Error", "Ocurrió un error procesando su solicitud.");
+              } finally {
+                setLoading(false);
+              }
+            },
+          }
+        );
+        return;
+      }
+
       showError(
         `Error ${response.bpOutReq.codigoError}`,
         response.bpOutReq.mensajeError,
@@ -316,7 +305,6 @@ const LoginPage: React.FC = () => {
 
   return (
     <main className="popular-login-page">
-      {/*<AlertPanel />*/}
       {loading && <PopularBackdrop open={true} />}
       <div className="popular-login-bg" />
       <section className="popular-login-card">

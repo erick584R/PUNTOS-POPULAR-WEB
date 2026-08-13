@@ -32,7 +32,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
   const [nombreUsuario, setNombreUsuario] = useState("");
   const pathname = usePathname();
   const router = useRouter();
-  const { showError, showSuccess } = useAlert();
+  const { showError } = useAlert();
 
   useEffect(() => {
     setMounted(true);
@@ -104,11 +104,16 @@ export default function Sidebar({ onToggle }: SidebarProps) {
         (response.ok ? "Sesión cerrada correctamente." : "Falló el cierre de la sesión.");
 
       if (response.ok && codigo === "0") {
-        showSuccess("Éxito", "Se ha cerrado la sesión exitosamente.");
+        sessionStorage.setItem("logout_success", "1");
+        sessionStorage.setItem(
+          "logout_success_message",
+          mensaje || "Se ha cerrado la sesión exitosamente."
+        );
+
         setTimeout(() => {
           limpiarFrontend();
           router.replace("/");
-        }, 900);
+        }, 300);
         return;
       }
 

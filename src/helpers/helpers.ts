@@ -12,7 +12,9 @@ type SessionStorageCodes =
   | "user_main_disp"
   | "user_profile"
   | "session_closed_by_other_device"
-  | "session_closed_message";
+  | "session_closed_message"
+  | "logout_success"
+  | "logout_success_message";
   
 
 export function SaveLocalStorage(key: LocalStorageCodes, value: string): void {

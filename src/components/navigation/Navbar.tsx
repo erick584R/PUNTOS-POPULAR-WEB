@@ -7,7 +7,7 @@ import ProductosServices from "@/services/productos.services";
 import { useAlert } from "@/hooks/useAlert";
 import { CuentaCorresponsalDetalle } from "@/interfaces/App/Productos.interfaces";
 import CuentaCorresponsalPopover from "@/components/feedback/CuentaCorresponsalPopover";
-import AlertPanel from "../feedback/AlertPanel";
+//import AlertPanel from "../feedback/AlertPanel";
 
 export default function PopularNavbar() {
   const [userName, setUserName] = useState("");

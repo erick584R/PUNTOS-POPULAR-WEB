@@ -9,7 +9,7 @@ import useFormHelper from "@/helpers/useFormHelper";
 import { DefaultValidator } from "@/helpers/validators";
 import SesionServices from "@/services/sesion.services";
 import PopularBackdrop from "../feedback/Backdrop";
-import AlertPanel from "../feedback/AlertPanel";
+// import AlertPanel from "../feedback/AlertPanel";
 import { useAlert } from "@/hooks/useAlert";
 import {
   GetLocalStorage,
@@ -316,7 +316,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <main className="popular-login-page">
-      <AlertPanel />
+      {/*<AlertPanel />*/}
       {loading && <PopularBackdrop open={true} />}
       <div className="popular-login-bg" />
       <section className="popular-login-card">

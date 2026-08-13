@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AlertPanel from "@/components/feedback/AlertPanel";
 
 export const metadata: Metadata = {
   title: "Puntos Popular",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        {children}
+        <AlertPanel />
+      </body>
     </html>
   );
 }

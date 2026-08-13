@@ -68,11 +68,22 @@ export function useSignalRGlobal() {
                 } catch (e) {
                     console.error("Error limpiando sesión:", e);
                 }
+                
 
                 showError(
                     "Sesión Cerrada",
                     "Tu sesión ha sido cerrada porque iniciaste sesión desde otro dispositivo."
                 );
+
+                try {
+  sessionStorage.setItem("session_closed_by_other_device", "1");
+  sessionStorage.setItem(
+    "session_closed_message",
+    "Tu sesión ha sido cerrada porque iniciaste sesión desde otro dispositivo."
+  );
+} catch {}
+
+
 
                 setTimeout(() => {
                     router.push("/");

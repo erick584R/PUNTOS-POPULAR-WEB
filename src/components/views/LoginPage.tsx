@@ -13,6 +13,7 @@ import AlertPanel from "../feedback/AlertPanel";
 import { useAlert } from "@/hooks/useAlert";
 import {
   GetLocalStorage,
+  GetSessionStorage,
   RemoveLocalStorage,
   SaveLocalStorage,
   SaveSessionStorage,
@@ -38,8 +39,25 @@ const LoginPage: React.FC = () => {
   const { values, handleChange } = useFormHelper<UserLoginProps>(initialValues);
 
   useEffect(() => {
+    
     if (initialLoad) {
       setInitialLoad(false);
+      const closedFlag = GetSessionStorage("session_closed_by_other_device");
+    const closedMessage = GetSessionStorage("session_closed_message");
+
+    if (closedFlag === "1") {
+      showError(
+        "Sesión Cerrada",
+        closedMessage ||
+          "Tu sesión ha sido cerrada porque iniciaste sesión desde otro dispositivo."
+      );
+
+      sessionStorage.removeItem("session_closed_by_other_device");
+      sessionStorage.removeItem("session_closed_message");
+    }
+
+
+      
       const user_name = GetLocalStorage("user_name");
       const device_id = GetLocalStorage("device_id");
 

@@ -125,6 +125,7 @@ export default function Sidebar({ onToggle }: SidebarProps) {
 
   const menuItems = [
     { name: "Dashboard", href: "/dashboard", icon: <BarChartOutlined className="popular-sidebar-icon" /> },
+    { name: "Operaciones de Cuenta", href: "/operaciones-cuenta", icon: <ReceiptOutlined className="popular-sidebar-icon" /> },
     { name: "Transacciones", href: "/transacciones", icon: <SwapHorizOutlined className="popular-sidebar-icon" /> },
     { name: "Servicios Públicos", href: "/servicios", icon: <ReceiptOutlined className="popular-sidebar-icon" /> },
   ];

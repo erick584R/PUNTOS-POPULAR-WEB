@@ -14,6 +14,7 @@ import {
   ObtenerDatosCuentaDestinoRequest,
   ObtenerDatosCuentaDestinoResponse,
   ProductoPasivo,
+  SdtPersona,
 } from "@/interfaces/Api/productos.api";
 import { CuentaCorresponsalDetalle } from "@/interfaces/App/Productos.interfaces";
 
@@ -46,22 +47,39 @@ function buildBpInReq(): bpInReq {
 
 function mapProductoToDetalle(
   producto: ProductoPasivo,
-  nombre: string,
+  persona: SdtPersona | null,
+  nombreFallback: string
 ): CuentaCorresponsalDetalle {
+  const nombreCompleto = [
+    persona?.primerNombre,
+    persona?.segundoNombre,
+    persona?.primerApellido,
+    persona?.segundoApellido,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
   return {
-    nombre,
+    nombre: nombreCompleto || nombreFallback,
     cuenta: producto.productoFormatoBP,
-    saldo: producto.saldo,
+    direccion: persona?.direccion || "",
+    nroDocumento: persona?.nroDocumento || "",
     moneda: producto.producto.moneda,
     tipoProducto: producto.tipoProducto,
     estado: producto.estado,
     sucursal: producto.sucursal,
+    saldo: producto.saldo,
+    ctnro: persona?.ctnro?.toString() || GetSessionStorage("user_id"),
+    clienteUid: persona?.clienteUid?.toString() || "",
+    telefonoCelular: persona?.telefonoCelular || "",
+    correoElectronico: persona?.correoElectronico || "",
   };
 }
 
 export default class ProductosServices {
   public async ObtenerDatosCuentaDestino(
-    cuenta: string,
+    cuenta: string
   ): Promise<ObtenerDatosCuentaDestinoResponse> {
     const requestBody: ObtenerDatosCuentaDestinoRequest = {
       bpInReq: buildBpInReq(),
@@ -71,7 +89,7 @@ export default class ProductosServices {
     return new Promise((resolve) => {
       Axios.post(
         "/api/ProductosCorresponsal/v1/BancoPopular/obtener-datos-cuenta-destino",
-        requestBody,
+        requestBody
       )
         .then((result) => resolve(result.data))
         .catch(() =>
@@ -83,7 +101,7 @@ export default class ProductosServices {
             },
             productosPasivos: null,
             sdtPersona: null,
-          }),
+          })
         );
     });
   }
@@ -114,25 +132,12 @@ export default class ProductosServices {
       };
     }
 
-    const nombreCompleto = [
-      response.sdtPersona?.primerNombre,
-      response.sdtPersona?.segundoNombre,
-      response.sdtPersona?.primerApellido,
-      response.sdtPersona?.segundoApellido,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
+    const nombreFallback =
+      GetSessionStorage("user_name_data") || GetSessionStorage("user_name") || "";
 
     return {
       ok: true,
-      detalle: mapProductoToDetalle(
-        producto,
-        nombreCompleto ||
-          GetSessionStorage("user_name_data") ||
-          GetSessionStorage("user_name") ||
-          "",
-      ),
+      detalle: mapProductoToDetalle(producto, response.sdtPersona, nombreFallback),
     };
   }
 }

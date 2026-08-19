@@ -108,6 +108,7 @@ const LoginPage: React.FC = () => {
     SaveSessionStorage("user_name_data", response.nombreCliente);
     SaveSessionStorage("user_main_disp", response.dispositivoPrincipal);
     SaveSessionStorage("user_account", response.cuentaBP);
+    SaveSessionStorage("user_main_account", response.cuentaBP);
 
     SaveSessionStorage(
       "user_profile",

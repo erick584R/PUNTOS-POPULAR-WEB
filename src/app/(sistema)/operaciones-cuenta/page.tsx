@@ -20,14 +20,13 @@ import {
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
-import {
-  GetSessionStorage,
-  SaveSessionStorage,
-} from "@/helpers/helpers";
+import { GetSessionStorage, SaveSessionStorage } from "@/helpers/helpers";
 import ProductosServices from "@/services/productos.services";
+import TransaccionesServices from "@/services/transacciones.services";
 import { useAlert } from "@/hooks/useAlert";
 import { CuentaCorresponsalDetalle } from "@/interfaces/App/Productos.interfaces";
 import TransactionConfirmationModal from "@/components/transactions/TransactionConfirmationModal";
+import TransactionSuccessModal, { ReciboItem } from "@/components/transactions/TransactionSuccessModal";
 
 type OperacionCuenta = "DEPOSITO" | "RETIRO";
 
@@ -44,9 +43,13 @@ export default function OperacionesCuentaPage() {
   const [cuenta, setCuenta] = useState("");
   const [monto, setMonto] = useState("");
   const [loading, setLoading] = useState(false);
+  const [executing, setExecuting] = useState(false);
   const [detalle, setDetalle] = useState<CuentaCorresponsalDetalle | null>(null);
   const [consultada, setConsultada] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successTitle, setSuccessTitle] = useState("Comprobante de transacción");
+  const [recibo, setRecibo] = useState<ReciboItem[] | null>(null);
 
   useEffect(() => {
     const token = GetSessionStorage("user_token");
@@ -136,12 +139,62 @@ export default function OperacionesCuentaPage() {
     setConfirmOpen(true);
   };
 
+  const ejecutarTransaccion = async () => {
+  if (!detalle) return;
+
+  setExecuting(true);
+
+  try {
+    const transaccionesService = new TransaccionesServices();
+
+    if (operacion === "DEPOSITO") {
+      const cuentaAgente = GetSessionStorage("user_main_account"); // cuenta BP del usuario logueado
+      const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
+      const usuarioCorresponsal = GetSessionStorage("user_name");
+
+      const response = await transaccionesService.DepositoCorresponsal({
+        importe: montoNumero,
+        cuentaCliente: detalle.cuenta, // cuenta destino del cliente
+        cuentaAgente: cuentaAgente, // cuenta BP del usuario logueado
+        agenteCorresponsal,
+        usuarioCorresponsal,
+        nombreCliente: detalle.nombre,
+        documentoCliente: detalle.nroDocumento,
+      });
+
+      if (response?.bpOutReq?.codigoError === "0") {
+        setRecibo(response.recibo || []);
+        setSuccessTitle("Comprobante de depósito");
+        setSuccessOpen(true);
+        setConfirmOpen(false);
+        return;
+      }
+
+      showError(
+        `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
+        response?.bpOutReq?.mensajeError || "No fue posible realizar la transacción."
+      );
+      setConfirmOpen(false);
+      return;
+    }
+
+    showError("Pendiente", "El retiro quedará conectado en el siguiente paso.");
+    setConfirmOpen(false);
+  } catch {
+    showError("Error", "Ocurrió un error ejecutando la transacción.");
+  } finally {
+    setExecuting(false);
+  }
+};
+
   const limpiarBusqueda = () => {
     setCuenta("");
     setMonto("");
     setDetalle(null);
     setConsultada(false);
     setConfirmOpen(false);
+    setSuccessOpen(false);
+    setRecibo(null);
   };
 
   return (
@@ -229,7 +282,7 @@ export default function OperacionesCuentaPage() {
             <Button
               variant="outlined"
               onClick={limpiarBusqueda}
-              disabled={loading}
+              disabled={loading || executing}
               sx={{
                 borderColor: "rgba(31,77,143,0.28)",
                 color: "#1f4d8f",
@@ -389,10 +442,14 @@ export default function OperacionesCuentaPage() {
         document={detalle?.nroDocumento || ""}
         amount={montoFormateado}
         onBack={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          setConfirmOpen(false);
-          showError("Pendiente", "El siguiente paso será ejecutar la API real de transacción.");
-        }}
+        onConfirm={ejecutarTransaccion}
+      />
+
+      <TransactionSuccessModal
+        open={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title={successTitle}
+        recibo={recibo}
       />
     </Box>
   );

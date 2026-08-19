@@ -4,6 +4,7 @@ type LocalStorageCodes = "device_id" | "user_name" | "device_fingerprint";
 type SessionStorageCodes =
   | "user_id"
   | "user_account"
+  | "user_main_account"
   | "user_token"
   | "sesion_info"
   | "device_ip"

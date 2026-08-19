@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-interface ReciboItem {
+export interface ReciboItem {
   campo: string;
   valor: string;
 }
@@ -34,16 +34,28 @@ export default function TransactionSuccessModal({
 }: Props) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography sx={{ fontWeight: 900, color: "#1f4d8f" }}>{title}</Typography>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontWeight: 900,
+          color: "#1f4d8f",
+        }}
+      >
+        {title}
         <IconButton onClick={onClose}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
       <DialogContent dividers>
-        <Typography sx={{ color: "#6b7280", mb: 2 }}>
+        <Typography sx={{ color: "#2e7d32", fontWeight: 800, mb: 1 }}>
           Transacción realizada exitosamente.
+        </Typography>
+
+        <Typography sx={{ color: "#6b7280", mb: 2 }}>
+          Comprobante generado desde un Agente Corresponsal.
         </Typography>
 
         <Divider sx={{ mb: 2 }} />
@@ -72,7 +84,7 @@ export default function TransactionSuccessModal({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button variant="contained" onClick={onClose} sx={{ bgcolor: "#f88606" }}>
+        <Button variant="outlined" onClick={onClose}>
           Cerrar
         </Button>
       </DialogActions>

@@ -148,42 +148,43 @@ export default function OperacionesCuentaPage() {
 
     try {
       const transaccionesService = new TransaccionesServices();
+      const cuentaAgente = GetSessionStorage("user_main_account");
+      const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
+      const usuarioCorresponsal = GetSessionStorage("user_name");
 
-      if (operacion === "DEPOSITO") {
-        const cuentaAgente = GetSessionStorage("user_main_account");
-        const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
-        const usuarioCorresponsal = GetSessionStorage("user_name");
-
-        if (!cuentaAgente) {
-          showError("Error", "No se encontró la cuenta BP del usuario logueado.");
-          return;
-        }
-
-        const response = await transaccionesService.DepositoCorresponsal({
-          importe: montoNumero,
-          cuentaCliente: detalle.cuenta,
-          cuentaAgente,
-          agenteCorresponsal,
-          usuarioCorresponsal,
-          nombreCliente: detalle.nombre,
-          documentoCliente: detalle.nroDocumento,
-        });
-
-        if (response?.bpOutReq?.codigoError === "0") {
-          setRecibo(response.recibo || []);
-          setSuccessTitle("Comprobante de depósito");
-          setSuccessOpen(true);
-          return;
-        }
-
-        showError(
-          `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
-          response?.bpOutReq?.mensajeError || "No fue posible realizar la transacción."
-        );
+      if (!cuentaAgente) {
+        showError("Error", "No se encontró la cuenta BP del usuario logueado.");
         return;
       }
 
-      showError("Pendiente", "El retiro quedará conectado en el siguiente paso.");
+      const payload = {
+        importe: montoNumero,
+        cuentaCliente: detalle.cuenta,
+        cuentaAgente,
+        agenteCorresponsal,
+        usuarioCorresponsal,
+        nombreCliente: detalle.nombre,
+        documentoCliente: detalle.nroDocumento,
+      };
+
+      const response =
+        operacion === "DEPOSITO"
+          ? await transaccionesService.DepositoCorresponsal(payload)
+          : await transaccionesService.RetiroCorresponsal(payload);
+
+      if (response?.bpOutReq?.codigoError === "0") {
+        setRecibo(response.recibo || []);
+        setSuccessTitle(
+          operacion === "DEPOSITO" ? "Comprobante de depósito" : "Comprobante de retiro"
+        );
+        setSuccessOpen(true);
+        return;
+      }
+
+      showError(
+        `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
+        response?.bpOutReq?.mensajeError || "No fue posible realizar la transacción."
+      );
     } catch {
       showError("Error", "Ocurrió un error ejecutando la transacción.");
     } finally {

@@ -47,8 +47,8 @@ export interface DepositoCorresponsalRequest {
 }
 
 export default class TransaccionesServices {
-  public async DepositoCorresponsal(body: DepositoCorresponsalRequest) {
-    const requestBody = {
+  private buildRequestBody(body: DepositoCorresponsalRequest) {
+    return {
       bpInReq: buildBpInReq(),
       importe: body.importe,
       cuentaCliente: body.cuentaCliente,
@@ -58,9 +58,36 @@ export default class TransaccionesServices {
       nombreCliente: body.nombreCliente,
       documentoCliente: body.documentoCliente,
     };
+  }
+
+  public async DepositoCorresponsal(body: DepositoCorresponsalRequest) {
+    const requestBody = this.buildRequestBody(body);
 
     return new Promise<any>((resolve) => {
       Axios.post("/api/Transacciones/v1/BancoPopular/Deposito-Corresponsal", requestBody)
+        .then((result) => resolve(result.data))
+        .catch((err) =>
+          resolve({
+            bpOutReq: {
+              codigoError: "4012",
+              mensajeError: "No fue posible realizar la Transacción. Intenta de Nuevo.",
+              fechaHora: new Date(),
+            },
+            movimientoUId: null,
+            erroresnegocio: null,
+            btoutreq: null,
+            recibo: null,
+            __error: err,
+          })
+        );
+    });
+  }
+
+  public async RetiroCorresponsal(body: DepositoCorresponsalRequest) {
+    const requestBody = this.buildRequestBody(body);
+
+    return new Promise<any>((resolve) => {
+      Axios.post("/api/Transacciones/v1/BancoPopular/Retiro-Corresponsal", requestBody)
         .then((result) => resolve(result.data))
         .catch((err) =>
           resolve({

@@ -27,6 +27,7 @@ import { useAlert } from "@/hooks/useAlert";
 import { CuentaCorresponsalDetalle } from "@/interfaces/App/Productos.interfaces";
 import TransactionConfirmationModal from "@/components/transactions/TransactionConfirmationModal";
 import TransactionSuccessModal, { ReciboItem } from "@/components/transactions/TransactionSuccessModal";
+import PopularBackdrop from "@/components/feedback/Backdrop";
 
 type OperacionCuenta = "DEPOSITO" | "RETIRO";
 
@@ -140,52 +141,55 @@ export default function OperacionesCuentaPage() {
   };
 
   const ejecutarTransaccion = async () => {
-  if (!detalle) return;
+    if (!detalle) return;
 
-  setExecuting(true);
+    setConfirmOpen(false);
+    setExecuting(true);
 
-  try {
-    const transaccionesService = new TransaccionesServices();
+    try {
+      const transaccionesService = new TransaccionesServices();
 
-    if (operacion === "DEPOSITO") {
-      const cuentaAgente = GetSessionStorage("user_main_account"); // cuenta BP del usuario logueado
-      const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
-      const usuarioCorresponsal = GetSessionStorage("user_name");
+      if (operacion === "DEPOSITO") {
+        const cuentaAgente = GetSessionStorage("user_main_account");
+        const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
+        const usuarioCorresponsal = GetSessionStorage("user_name");
 
-      const response = await transaccionesService.DepositoCorresponsal({
-        importe: montoNumero,
-        cuentaCliente: detalle.cuenta, // cuenta destino del cliente
-        cuentaAgente: cuentaAgente, // cuenta BP del usuario logueado
-        agenteCorresponsal,
-        usuarioCorresponsal,
-        nombreCliente: detalle.nombre,
-        documentoCliente: detalle.nroDocumento,
-      });
+        if (!cuentaAgente) {
+          showError("Error", "No se encontró la cuenta BP del usuario logueado.");
+          return;
+        }
 
-      if (response?.bpOutReq?.codigoError === "0") {
-        setRecibo(response.recibo || []);
-        setSuccessTitle("Comprobante de depósito");
-        setSuccessOpen(true);
-        setConfirmOpen(false);
+        const response = await transaccionesService.DepositoCorresponsal({
+          importe: montoNumero,
+          cuentaCliente: detalle.cuenta,
+          cuentaAgente,
+          agenteCorresponsal,
+          usuarioCorresponsal,
+          nombreCliente: detalle.nombre,
+          documentoCliente: detalle.nroDocumento,
+        });
+
+        if (response?.bpOutReq?.codigoError === "0") {
+          setRecibo(response.recibo || []);
+          setSuccessTitle("Comprobante de depósito");
+          setSuccessOpen(true);
+          return;
+        }
+
+        showError(
+          `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
+          response?.bpOutReq?.mensajeError || "No fue posible realizar la transacción."
+        );
         return;
       }
 
-      showError(
-        `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
-        response?.bpOutReq?.mensajeError || "No fue posible realizar la transacción."
-      );
-      setConfirmOpen(false);
-      return;
+      showError("Pendiente", "El retiro quedará conectado en el siguiente paso.");
+    } catch {
+      showError("Error", "Ocurrió un error ejecutando la transacción.");
+    } finally {
+      setExecuting(false);
     }
-
-    showError("Pendiente", "El retiro quedará conectado en el siguiente paso.");
-    setConfirmOpen(false);
-  } catch {
-    showError("Error", "Ocurrió un error ejecutando la transacción.");
-  } finally {
-    setExecuting(false);
-  }
-};
+  };
 
   const limpiarBusqueda = () => {
     setCuenta("");
@@ -199,6 +203,8 @@ export default function OperacionesCuentaPage() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <PopularBackdrop open={executing} />
+
       <Box>
         <Typography variant="h4" sx={{ fontWeight: 900, color: "#1f4d8f", mb: 0.5 }}>
           Operaciones de Cuenta
@@ -266,7 +272,7 @@ export default function OperacionesCuentaPage() {
             <Button
               variant="contained"
               onClick={handleBuscar}
-              disabled={loading}
+              disabled={loading || executing}
               startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <SearchOutlinedIcon />}
               sx={{
                 bgcolor: "#1f4d8f",
@@ -408,12 +414,13 @@ export default function OperacionesCuentaPage() {
                     value={monto}
                     onChange={(e) => setMonto(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))}
                     placeholder="Ingrese el monto"
+                    disabled={executing}
                   />
 
                   <Button
                     variant="contained"
                     onClick={handleAbrirConfirmacion}
-                    disabled={!detalle || !monto}
+                    disabled={!detalle || !monto || executing}
                     endIcon={<ArrowForwardOutlinedIcon />}
                     sx={{
                       bgcolor: "#f88606",

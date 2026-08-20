@@ -27,7 +27,9 @@ import TokenServices from "@/services/token.services";
 import { useAlert } from "@/hooks/useAlert";
 import { CuentaCorresponsalDetalle } from "@/interfaces/App/Productos.interfaces";
 import TransactionConfirmationModal from "@/components/transactions/TransactionConfirmationModal";
-import TransactionSuccessModal, { ReciboItem } from "@/components/transactions/TransactionSuccessModal";
+import TransactionSuccessModal, {
+  ReciboItem,
+} from "@/components/transactions/TransactionSuccessModal";
 import TransactionTokenModal from "@/components/transactions/TransactionTokenModal";
 import PopularBackdrop from "@/components/feedback/Backdrop";
 
@@ -52,11 +54,15 @@ export default function OperacionesCuentaPage() {
   const [monto, setMonto] = useState("");
   const [loading, setLoading] = useState(false);
   const [executing, setExecuting] = useState(false);
-  const [detalle, setDetalle] = useState<CuentaCorresponsalDetalle | null>(null);
+  const [detalle, setDetalle] = useState<CuentaCorresponsalDetalle | null>(
+    null,
+  );
   const [consultada, setConsultada] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-  const [successTitle, setSuccessTitle] = useState("Comprobante de transacción");
+  const [successTitle, setSuccessTitle] = useState(
+    "Comprobante de transacción",
+  );
   const [recibo, setRecibo] = useState<ReciboItem[] | null>(null);
 
   const [tokenOpen, setTokenOpen] = useState(false);
@@ -93,15 +99,15 @@ export default function OperacionesCuentaPage() {
   }, [montoNumero, detalle]);
 
   const guardarDatosFuturos = (info: CuentaCorresponsalDetalle) => {
-  SaveSessionStorage(
-    "transaction_target_account",
-    JSON.stringify({
-      nombreCliente: info.nombre,
-      nroDocumento: info.nroDocumento,
-      cuentaBP: info.cuenta,
-    })
-  );
-};
+    SaveSessionStorage(
+      "transaction_target_account",
+      JSON.stringify({
+        nombreCliente: info.nombre,
+        nroDocumento: info.nroDocumento,
+        cuentaBP: info.cuenta,
+      }),
+    );
+  };
 
   const handleBuscar = async () => {
     const cuentaLimpia = cuenta.trim();
@@ -117,12 +123,13 @@ export default function OperacionesCuentaPage() {
 
     try {
       const service = new ProductosServices();
-      const result = await service.ObtenerCuentaCorresponsalDetalle(cuentaLimpia);
+      const result =
+        await service.ObtenerCuentaCorresponsalDetalle(cuentaLimpia);
 
       if (!result.ok || !result.detalle) {
         showError(
           `Error ${result.codigoError ?? "desconocido"}`,
-          result.mensajeError || "No fue posible consultar la cuenta."
+          result.mensajeError || "No fue posible consultar la cuenta.",
         );
         return;
       }
@@ -157,7 +164,8 @@ export default function OperacionesCuentaPage() {
     setConfirmOpen(false);
 
     const cuentaAgente = GetSessionStorage("user_main_account");
-    const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
+    const agenteCorresponsal =
+      GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
     const usuarioCorresponsal = GetSessionStorage("user_name");
 
     if (!cuentaAgente) {
@@ -181,7 +189,8 @@ export default function OperacionesCuentaPage() {
       if (operacion === "DEPOSITO") {
         setExecuting(true);
 
-        const response = await transaccionesService.DepositoCorresponsal(payloadTransaccion);
+        const response =
+          await transaccionesService.DepositoCorresponsal(payloadTransaccion);
 
         if (response?.bpOutReq?.codigoError === "0") {
           setRecibo(response.recibo || []);
@@ -192,7 +201,8 @@ export default function OperacionesCuentaPage() {
 
         showError(
           `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
-          response?.bpOutReq?.mensajeError || "No fue posible realizar la transacción."
+          response?.bpOutReq?.mensajeError ||
+            "No fue posible realizar la transacción.",
         );
         return;
       }
@@ -209,12 +219,15 @@ export default function OperacionesCuentaPage() {
       if (generarTokenResponse?.bpOutReq?.codigoError !== "0") {
         showError(
           `Error ${generarTokenResponse?.bpOutReq?.codigoError ?? "desconocido"}`,
-          generarTokenResponse?.bpOutReq?.mensajeError || "No se pudo enviar el token."
+          generarTokenResponse?.bpOutReq?.mensajeError ||
+            "No se pudo enviar el token.",
         );
         return;
       }
 
-      setTelefonoDestino(detalle.telefonoCelular || (detalle as any).telefono || "");
+      setTelefonoDestino(
+        detalle.telefonoCelular || (detalle as any).telefono || "",
+      );
       setTokenOpen(true);
     } catch {
       showError("Error", "Ocurrió un error ejecutando la transacción.");
@@ -227,7 +240,8 @@ export default function OperacionesCuentaPage() {
     if (!detalle) return;
 
     const cuentaAgente = GetSessionStorage("user_main_account");
-    const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
+    const agenteCorresponsal =
+      GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
     const usuarioCorresponsal = GetSessionStorage("user_name");
 
     if (!cuentaAgente) {
@@ -248,7 +262,8 @@ export default function OperacionesCuentaPage() {
       if (validarResponse?.bpOutReq?.codigoError !== "0") {
         showError(
           `Error ${validarResponse?.bpOutReq?.codigoError ?? "desconocido"}`,
-          validarResponse?.bpOutReq?.mensajeError || "No se pudo validar el token."
+          validarResponse?.bpOutReq?.mensajeError ||
+            "No se pudo validar el token.",
         );
         return;
       }
@@ -275,10 +290,14 @@ export default function OperacionesCuentaPage() {
 
       showError(
         `Error ${retiroResponse?.bpOutReq?.codigoError ?? "desconocido"}`,
-        retiroResponse?.bpOutReq?.mensajeError || "No fue posible realizar el retiro."
+        retiroResponse?.bpOutReq?.mensajeError ||
+          "No fue posible realizar el retiro.",
       );
     } catch {
-      showError("Error", "Ocurrió un error validando el token o ejecutando el retiro.");
+      showError(
+        "Error",
+        "Ocurrió un error validando el token o ejecutando el retiro.",
+      );
     } finally {
       setTokenLoading(false);
     }
@@ -300,7 +319,7 @@ export default function OperacionesCuentaPage() {
       if (response?.bpOutReq?.codigoError !== "0") {
         showError(
           `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
-          response?.bpOutReq?.mensajeError || "No se pudo reenviar el token."
+          response?.bpOutReq?.mensajeError || "No se pudo reenviar el token.",
         );
       }
     } finally {
@@ -325,11 +344,15 @@ export default function OperacionesCuentaPage() {
       <PopularBackdrop open={executing} />
 
       <Box>
-        <Typography variant="h4" sx={{ fontWeight: 900, color: "#1f4d8f", mb: 0.5 }}>
+        <Typography
+          variant="h4"
+          sx={{ fontWeight: 900, color: "#1f4d8f", mb: 0.5 }}
+        >
           Operaciones de Cuenta
         </Typography>
         <Typography sx={{ color: "#6b7280" }}>
-          Selecciona la operación, consulta la cuenta y prepara la transacción antes de ejecutarla.
+          Selecciona la operación, consulta la cuenta y prepara la transacción
+          antes de ejecutarla.
         </Typography>
       </Box>
 
@@ -342,8 +365,16 @@ export default function OperacionesCuentaPage() {
           background: "linear-gradient(180deg, #ffffff 0%, #fbfcff 100%)",
         }}
       >
-        <Box sx={{ px: 3, py: 2, background: "linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%)" }}>
-          <Typography sx={{ fontWeight: 800, color: "#1f4d8f" }}>Consulta de Cuenta</Typography>
+        <Box
+          sx={{
+            px: 3,
+            py: 2,
+            background: "linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%)",
+          }}
+        >
+          <Typography sx={{ fontWeight: 800, color: "#1f4d8f" }}>
+            Consulta de Cuenta
+          </Typography>
         </Box>
 
         <Divider />
@@ -362,7 +393,9 @@ export default function OperacionesCuentaPage() {
                 labelId="operacion-label"
                 value={operacion}
                 label="Tipo de operación"
-                onChange={(e) => setOperacion(e.target.value as OperacionCuenta)}
+                onChange={(e) =>
+                  setOperacion(e.target.value as OperacionCuenta)
+                }
               >
                 {operaciones.map((op) => (
                   <MenuItem key={op.value} value={op.value}>
@@ -392,7 +425,13 @@ export default function OperacionesCuentaPage() {
               variant="contained"
               onClick={handleBuscar}
               disabled={loading || executing}
-              startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <SearchOutlinedIcon />}
+              startIcon={
+                loading ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  <SearchOutlinedIcon />
+                )
+              }
               sx={{
                 bgcolor: "#1f4d8f",
                 "&:hover": { bgcolor: "#163b6c" },
@@ -449,7 +488,8 @@ export default function OperacionesCuentaPage() {
         <Box sx={{ p: 3 }}>
           {!consultada && !loading && (
             <Alert severity="info" variant="outlined">
-              Ingresa una cuenta y presiona <b>Consultar cuenta</b> para ver la información.
+              Ingresa una cuenta y presiona <b>Consultar cuenta</b> para ver la
+              información.
             </Alert>
           )}
 
@@ -466,20 +506,24 @@ export default function OperacionesCuentaPage() {
                 gridTemplateColumns: { xs: "1fr", md: "220px 1fr" },
                 gap: 2,
                 alignItems: "stretch",
+                width: "100%",
               }}
             >
               <Box
                 sx={{
                   borderRadius: 3,
                   border: "1px solid rgba(248,134,6,0.18)",
-                  background: "linear-gradient(180deg, #fff7ef 0%, #fffdf9 100%)",
+                  background:
+                    "linear-gradient(180deg, #fff7ef 0%, #fffdf9 100%)",
                   p: 2,
                   display: "flex",
                   flexDirection: "column",
                   gap: 1,
                 }}
               >
-                <Typography sx={{ fontSize: 12, fontWeight: 800, color: "#6b7280" }}>
+                <Typography
+                  sx={{ fontSize: 12, fontWeight: 800, color: "#6b7280" }}
+                >
                   Operación seleccionada
                 </Typography>
 
@@ -496,7 +540,14 @@ export default function OperacionesCuentaPage() {
                 <Typography sx={{ fontSize: 12, color: "#6b7280" }}>
                   Cuenta consultada
                 </Typography>
-                <Typography sx={{ fontSize: 15, fontWeight: 900, color: "#111827", wordBreak: "break-word" }}>
+                <Typography
+                  sx={{
+                    fontSize: 15,
+                    fontWeight: 900,
+                    color: "#111827",
+                    wordBreak: "break-word",
+                  }}
+                >
                   {detalle.cuenta}
                 </Typography>
 
@@ -510,19 +561,39 @@ export default function OperacionesCuentaPage() {
                   borderRadius: 3,
                   border: "1px solid rgba(31,77,143,0.12)",
                   background: "#ffffff",
-                  p: 2.5,
+                  p: { xs: 1.5, sm: 2, md: 2.5 },
+                  minWidth: 0,
+                  overflowX: "hidden",
                 }}
               >
-                <Typography sx={{ fontSize: 12, fontWeight: 800, color: "#6b7280", mb: 0.5 }}>
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: "#6b7280",
+                    mb: 0.5,
+                  }}
+                >
                   Información de la cuenta
                 </Typography>
 
                 <Divider sx={{ my: 2 }} />
 
-                <Box sx={{ display: "grid", gap: 1.2 }}>
+                <Box
+                  sx={{
+                    mt: 3,
+                    display: "grid",
+                    gap: 2,
+                    width: "100%",
+                    minWidth: 0,
+                  }}
+                >
                   <InfoRow label="Nombre" value={detalle.nombre} />
                   <InfoRow label="Dirección" value={detalle.direccion} />
-                  <InfoRow label="Número de documento" value={detalle.nroDocumento} />
+                  <InfoRow
+                    label="Número de documento"
+                    value={detalle.nroDocumento}
+                  />
                   <InfoRow label="Moneda" value={detalle.moneda} />
                 </Box>
 
@@ -531,9 +602,14 @@ export default function OperacionesCuentaPage() {
                     fullWidth
                     label="Monto a transaccionar"
                     value={monto}
-                    onChange={(e) => setMonto(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))}
+                    onChange={(e) =>
+                      setMonto(
+                        e.target.value.replace(/[^0-9.]/g, "").slice(0, 12),
+                      )
+                    }
                     placeholder="Ingrese el monto"
                     disabled={executing}
+                    sx={{ width: "100%" }}
                   />
 
                   <Button
@@ -544,10 +620,11 @@ export default function OperacionesCuentaPage() {
                     sx={{
                       bgcolor: "#f88606",
                       "&:hover": { bgcolor: "#e07600" },
-                      minWidth: 220,
+                      width: "100%",
+                      minWidth: 0,
                       borderRadius: 999,
                       fontWeight: 800,
-                      alignSelf: "flex-start",
+                      alignSelf: "stretch",
                     }}
                   >
                     Revisar transacción
@@ -593,9 +670,25 @@ export default function OperacionesCuentaPage() {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between", flexWrap: "wrap" }}>
-      <Typography sx={{ color: "#6b7280", fontWeight: 700, minWidth: 160 }}>{label}</Typography>
-      <Typography sx={{ color: "#111827", fontWeight: 800, textAlign: "right", wordBreak: "break-word" }}>
+    <Box
+      sx={{
+        display: "flex",
+        gap: 2,
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+      }}
+    >
+      <Typography sx={{ color: "#6b7280", fontWeight: 700, minWidth: 160 }}>
+        {label}
+      </Typography>
+      <Typography
+        sx={{
+          color: "#111827",
+          fontWeight: 800,
+          textAlign: "right",
+          wordBreak: "break-word",
+        }}
+      >
         {value || "-"}
       </Typography>
     </Box>

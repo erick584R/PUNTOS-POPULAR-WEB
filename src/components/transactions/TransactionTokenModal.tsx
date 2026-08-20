@@ -47,7 +47,13 @@ export default function TransactionTokenModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth scroll="paper">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      scroll="paper"
+    >
       <DialogTitle
         sx={{
           fontWeight: 900,
@@ -79,15 +85,25 @@ export default function TransactionTokenModal({
             fullWidth
             label="Token"
             value={token}
-            onChange={(e) => setToken(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+            onChange={(e) =>
+              setToken(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))
+            }
             placeholder="Ingrese el token recibido"
-            inputProps={{ maxLength: 6 }}
+            slotProps={{
+              htmlInput: {
+                maxLength: 6,
+              },
+            }}
           />
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-        <Button variant="outlined" onClick={onClose} disabled={loading || resendLoading}>
+        <Button
+          variant="outlined"
+          onClick={onClose}
+          disabled={loading || resendLoading}
+        >
           Cerrar
         </Button>
 
@@ -96,7 +112,11 @@ export default function TransactionTokenModal({
           onClick={handleResend}
           disabled={loading || resendLoading}
           sx={{ fontWeight: 800 }}
-          startIcon={resendLoading ? <CircularProgress size={16} color="inherit" /> : null}
+          startIcon={
+            resendLoading ? (
+              <CircularProgress size={16} color="inherit" />
+            ) : null
+          }
         >
           {resendLoading ? "Reenviando..." : "Reenviar token"}
         </Button>
@@ -105,8 +125,14 @@ export default function TransactionTokenModal({
           variant="contained"
           onClick={handleValidate}
           disabled={loading || token.trim().length < 4}
-          sx={{ bgcolor: "#f88606", "&:hover": { bgcolor: "#e07600" }, fontWeight: 800 }}
-          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}
+          sx={{
+            bgcolor: "#f88606",
+            "&:hover": { bgcolor: "#e07600" },
+            fontWeight: 800,
+          }}
+          startIcon={
+            loading ? <CircularProgress size={16} color="inherit" /> : null
+          }
         >
           {loading ? "Validando..." : "Validar token"}
         </Button>

@@ -93,16 +93,15 @@ export default function OperacionesCuentaPage() {
   }, [montoNumero, detalle]);
 
   const guardarDatosFuturos = (info: CuentaCorresponsalDetalle) => {
-    SaveSessionStorage("user_account", info.cuenta);
-    SaveSessionStorage(
-      "transaction_target_account",
-      JSON.stringify({
-        nombreCliente: info.nombre,
-        nroDocumento: info.nroDocumento,
-        cuentaBP: info.cuenta,
-      })
-    );
-  };
+  SaveSessionStorage(
+    "transaction_target_account",
+    JSON.stringify({
+      nombreCliente: info.nombre,
+      nroDocumento: info.nroDocumento,
+      cuentaBP: info.cuenta,
+    })
+  );
+};
 
   const handleBuscar = async () => {
     const cuentaLimpia = cuenta.trim();

@@ -23,10 +23,12 @@ import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalance
 import { GetSessionStorage, SaveSessionStorage } from "@/helpers/helpers";
 import ProductosServices from "@/services/productos.services";
 import TransaccionesServices from "@/services/transacciones.services";
+import TokenServices from "@/services/token.services";
 import { useAlert } from "@/hooks/useAlert";
 import { CuentaCorresponsalDetalle } from "@/interfaces/App/Productos.interfaces";
 import TransactionConfirmationModal from "@/components/transactions/TransactionConfirmationModal";
 import TransactionSuccessModal, { ReciboItem } from "@/components/transactions/TransactionSuccessModal";
+import TransactionTokenModal from "@/components/transactions/TransactionTokenModal";
 import PopularBackdrop from "@/components/feedback/Backdrop";
 
 type OperacionCuenta = "DEPOSITO" | "RETIRO";
@@ -35,6 +37,11 @@ const operaciones = [
   { value: "DEPOSITO", label: "Depósito" },
   { value: "RETIRO", label: "Retiro" },
 ] as const;
+
+function enmascararTelefono(telefono: string) {
+  if (!telefono || telefono.length < 4) return "****";
+  return `****${telefono.slice(-4)}`;
+}
 
 export default function OperacionesCuentaPage() {
   const router = useRouter();
@@ -51,6 +58,11 @@ export default function OperacionesCuentaPage() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [successTitle, setSuccessTitle] = useState("Comprobante de transacción");
   const [recibo, setRecibo] = useState<ReciboItem[] | null>(null);
+
+  const [tokenOpen, setTokenOpen] = useState(false);
+  const [telefonoDestino, setTelefonoDestino] = useState("");
+  const [tokenLoading, setTokenLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
     const token = GetSessionStorage("user_token");
@@ -144,20 +156,107 @@ export default function OperacionesCuentaPage() {
     if (!detalle) return;
 
     setConfirmOpen(false);
-    setExecuting(true);
+
+    const cuentaAgente = GetSessionStorage("user_main_account");
+    const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
+    const usuarioCorresponsal = GetSessionStorage("user_name");
+
+    if (!cuentaAgente) {
+      showError("Error", "No se encontró la cuenta BP del usuario logueado.");
+      return;
+    }
+
+    const payloadTransaccion = {
+      importe: montoNumero,
+      cuentaCliente: detalle.cuenta,
+      cuentaAgente,
+      agenteCorresponsal,
+      usuarioCorresponsal,
+      nombreCliente: detalle.nombre,
+      documentoCliente: detalle.nroDocumento,
+    };
 
     try {
       const transaccionesService = new TransaccionesServices();
-      const cuentaAgente = GetSessionStorage("user_main_account");
-      const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
-      const usuarioCorresponsal = GetSessionStorage("user_name");
 
-      if (!cuentaAgente) {
-        showError("Error", "No se encontró la cuenta BP del usuario logueado.");
+      if (operacion === "DEPOSITO") {
+        setExecuting(true);
+
+        const response = await transaccionesService.DepositoCorresponsal(payloadTransaccion);
+
+        if (response?.bpOutReq?.codigoError === "0") {
+          setRecibo(response.recibo || []);
+          setSuccessTitle("Comprobante de depósito");
+          setSuccessOpen(true);
+          return;
+        }
+
+        showError(
+          `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
+          response?.bpOutReq?.mensajeError || "No fue posible realizar la transacción."
+        );
         return;
       }
 
-      const payload = {
+      setExecuting(true);
+
+      const tokenService = new TokenServices();
+      const generarTokenResponse = await tokenService.GenerarTokenCorresponsal({
+        cuentaCliente: detalle.cuenta,
+        enviarEmail: false,
+        enviarSMS: true,
+      });
+
+      if (generarTokenResponse?.bpOutReq?.codigoError !== "0") {
+        showError(
+          `Error ${generarTokenResponse?.bpOutReq?.codigoError ?? "desconocido"}`,
+          generarTokenResponse?.bpOutReq?.mensajeError || "No se pudo enviar el token."
+        );
+        return;
+      }
+
+      setTelefonoDestino(detalle.telefonoCelular || (detalle as any).telefono || "");
+      setTokenOpen(true);
+    } catch {
+      showError("Error", "Ocurrió un error ejecutando la transacción.");
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const validarTokenYRetirar = async (tokenIngresado: string) => {
+    if (!detalle) return;
+
+    const cuentaAgente = GetSessionStorage("user_main_account");
+    const agenteCorresponsal = GetSessionStorage("user_name_data") || GetSessionStorage("user_name");
+    const usuarioCorresponsal = GetSessionStorage("user_name");
+
+    if (!cuentaAgente) {
+      showError("Error", "No se encontró la cuenta BP del usuario logueado.");
+      return;
+    }
+
+    setTokenLoading(true);
+
+    try {
+      const tokenService = new TokenServices();
+
+      const validarResponse = await tokenService.ValidarTokenCorresponsal({
+        cuentaCliente: detalle.cuenta,
+        tokenBP: tokenIngresado,
+      });
+
+      if (validarResponse?.bpOutReq?.codigoError !== "0") {
+        showError(
+          `Error ${validarResponse?.bpOutReq?.codigoError ?? "desconocido"}`,
+          validarResponse?.bpOutReq?.mensajeError || "No se pudo validar el token."
+        );
+        return;
+      }
+
+      const transaccionesService = new TransaccionesServices();
+
+      const retiroResponse = await transaccionesService.RetiroCorresponsal({
         importe: montoNumero,
         cuentaCliente: detalle.cuenta,
         cuentaAgente,
@@ -165,30 +264,48 @@ export default function OperacionesCuentaPage() {
         usuarioCorresponsal,
         nombreCliente: detalle.nombre,
         documentoCliente: detalle.nroDocumento,
-      };
+      });
 
-      const response =
-        operacion === "DEPOSITO"
-          ? await transaccionesService.DepositoCorresponsal(payload)
-          : await transaccionesService.RetiroCorresponsal(payload);
-
-      if (response?.bpOutReq?.codigoError === "0") {
-        setRecibo(response.recibo || []);
-        setSuccessTitle(
-          operacion === "DEPOSITO" ? "Comprobante de depósito" : "Comprobante de retiro"
-        );
+      if (retiroResponse?.bpOutReq?.codigoError === "0") {
+        setTokenOpen(false);
+        setRecibo(retiroResponse.recibo || []);
+        setSuccessTitle("Comprobante de retiro");
         setSuccessOpen(true);
         return;
       }
 
       showError(
-        `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
-        response?.bpOutReq?.mensajeError || "No fue posible realizar la transacción."
+        `Error ${retiroResponse?.bpOutReq?.codigoError ?? "desconocido"}`,
+        retiroResponse?.bpOutReq?.mensajeError || "No fue posible realizar el retiro."
       );
     } catch {
-      showError("Error", "Ocurrió un error ejecutando la transacción.");
+      showError("Error", "Ocurrió un error validando el token o ejecutando el retiro.");
     } finally {
-      setExecuting(false);
+      setTokenLoading(false);
+    }
+  };
+
+  const reenviarToken = async () => {
+    if (!detalle) return;
+
+    setResendLoading(true);
+
+    try {
+      const tokenService = new TokenServices();
+      const response = await tokenService.GenerarTokenCorresponsal({
+        cuentaCliente: detalle.cuenta,
+        enviarEmail: false,
+        enviarSMS: true,
+      });
+
+      if (response?.bpOutReq?.codigoError !== "0") {
+        showError(
+          `Error ${response?.bpOutReq?.codigoError ?? "desconocido"}`,
+          response?.bpOutReq?.mensajeError || "No se pudo reenviar el token."
+        );
+      }
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -200,6 +317,8 @@ export default function OperacionesCuentaPage() {
     setConfirmOpen(false);
     setSuccessOpen(false);
     setRecibo(null);
+    setTokenOpen(false);
+    setTelefonoDestino("");
   };
 
   return (
@@ -451,6 +570,16 @@ export default function OperacionesCuentaPage() {
         amount={montoFormateado}
         onBack={() => setConfirmOpen(false)}
         onConfirm={ejecutarTransaccion}
+      />
+
+      <TransactionTokenModal
+        open={tokenOpen}
+        onClose={() => setTokenOpen(false)}
+        telefonoMasked={enmascararTelefono(telefonoDestino)}
+        onResend={reenviarToken}
+        onValidate={validarTokenYRetirar}
+        loading={tokenLoading}
+        resendLoading={resendLoading}
       />
 
       <TransactionSuccessModal
